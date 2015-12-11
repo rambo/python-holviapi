@@ -1,6 +1,8 @@
 from __future__ import print_function
+from future.utils import python_2_unicode_compatible
 from future.utils import raise_from
 
+@python_2_unicode_compatible
 class Invoice(object):
     """This represents an invoice in the Holvi system"""
     def __init__(self, connection, jsondata=None):
@@ -27,6 +29,7 @@ class Invoice(object):
         raise NotImplementedError()
 
 
+@python_2_unicode_compatible
 class InvoiceAPI(object):
     """Handles the operations on invoices, instantiate with a Connection object"""
     base_url_fmt = 'pool/{pool}/invoice/'

@@ -1,6 +1,9 @@
 from __future__ import print_function
+from future.utils import python_2_unicode_compatible
 import requests
 
+
+@python_2_unicode_compatible
 class Connection(object):
     base_url_fmt = "https://holvi.com/api/"
     
