@@ -1,6 +1,5 @@
 from __future__ import print_function
-from future.utils import python_2_unicode_compatible
-from future.utils import raise_from
+from future.utils import python_2_unicode_compatible, raise_from
 
 
 @python_2_unicode_compatible
@@ -33,8 +32,20 @@ class Order(object):
 @python_2_unicode_compatible
 class CheckoutAPI(object):
     """Handles the operations on invoices, instantiate with a Connection object"""
+    base_url_fmt = 'checkout/v2/pool/'
 
     def __init__(self, connection):
         self.connection = connection
-        raise NotImplementedError()
-        self.base_url = str(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
+        self.base_url = str(connection.base_url_fmt + self.base_url_fmt)
+
+    def list_orders(self):
+        """Lists all invoices in the system"""
+        url = self.base_url + '{pool}/order/'.format(pool=self.connection.pool)
+        # TODO add filtering support
+        orders = self.connection.make_get(url)
+        #print("Got orders=%s" % orders)
+        # TODO: Make generator to handle the paging
+        ret = []
+        for ojson in orders['results']:
+            ret.append(Order(self.connection, ojson))
+        return ret

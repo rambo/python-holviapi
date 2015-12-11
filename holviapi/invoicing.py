@@ -1,6 +1,6 @@
 from __future__ import print_function
-from future.utils import python_2_unicode_compatible
-from future.utils import raise_from
+from future.utils import python_2_unicode_compatible, raise_from
+
 
 @python_2_unicode_compatible
 class Invoice(object):
