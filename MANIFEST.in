@@ -1,0 +1,3 @@
+include README.md
+recursive-include holviapi *.py
+recursive-exclude holviapi ._*
