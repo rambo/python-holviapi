@@ -7,20 +7,6 @@ from .utils import HolviObject
 @python_2_unicode_compatible
 class Category(HolviObject):
     """Baseclass for income/expense categories, do not instantiate directly"""
-    def __init__(self, connection, jsondata=None):
-        self.connection = connection
-        if not jsondata:
-            self._init_empty()
-        else:
-            self._jsondata = jsondata
-
-    def _init_empty(self):
-        """Creates the base set of attributes category has/needs"""
-        raise NotImplementedError()
-
-    def save(self):
-        """Creates or updates the category"""
-        raise NotImplementedError()
 
 
 class IncomeCategory(Category):
@@ -50,7 +36,7 @@ class CategoriesAPI(object):
         #print("Got obdata=%s" % obdata)
         ret = []
         for icjson in obdata['income_categories']:
-            ret.append(IncomeCategory(self.connection, icjson))
+            ret.append(IncomeCategory(self, icjson))
         return ret
 
     def list_expense_categories(self):
@@ -60,5 +46,5 @@ class CategoriesAPI(object):
         #print("Got obdata=%s" % obdata)
         ret = []
         for ecjson in obdata['expense_categories']:
-            ret.append(ExpenseCategory(self.connection, ecjson))
+            ret.append(ExpenseCategory(self, ecjson))
         return ret

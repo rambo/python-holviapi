@@ -12,15 +12,11 @@ class Invoice(HolviObject):
     """This represents an invoice in the Holvi system"""
     items = []
 
-    def __init__(self, connection, jsondata=None):
-        self.connection = connection
-        if not jsondata:
-            self._init_empty()
-        else:
-            self._jsondata = jsondata
-            self.items = []
-            for item in self._jsondata["items"]:
-                self.items.append(InvoiceItem(self.connection, holvi_dict=item))
+    def __init__(self, api, jsondata=None):
+        super(Invoice, self).__init__(api, jsondata)
+        self.items = []
+        for item in self._jsondata["items"]:
+            self.items.append(InvoiceItem(self, holvi_dict=item))
 
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
@@ -48,13 +44,13 @@ class Invoice(HolviObject):
         If send_email is False then the invoice is *not* automatically emailed to the recipient
         and your must take care of sending the invoice yourself.
         """
-        url = str(self.connection.base_url_fmt + 'pool/{pool}/invoice/{code}/status/').format(pool=self.connection.pool, code=self.code)
+        url = str(self.api.base_url + '{code}/status/').format(code=self.code)
         payload = {
             'mark_as_sent': True,
             'send_email': send_email,
             'active': True, # It must be active to be sent...
         }
-        stat = self.connection.make_put(url, payload)
+        stat = self.api.connection.make_put(url, payload)
         #print("Got stat=%s" % stat)
         # TODO: Check the stat and raise error if daft is not false or active is not true ?
 
@@ -64,10 +60,6 @@ class Invoice(HolviObject):
             self._jsondata["items"].append(item.to_holvi_dict())
         return self._jsondata
 
-    def save(self):
-        """Creates or updates the invoice"""
-        raise NotImplementedError()
-
 
 class InvoiceItem(object):
     category = None
@@ -76,10 +68,10 @@ class InvoiceItem(object):
     gross = None
     _cklass = IncomeCategory
 
-    def __init__(self, connection, net=None, desc=None, holvi_dict=None, cklass=None):
+    def __init__(self, api, net=None, desc=None, holvi_dict=None, cklass=None):
         if cklass:
             self._cklass = cklass
-        self.connection = connection
+        self.api = api
         self.net = net
         self.description = desc
         if holvi_dict:
@@ -89,7 +81,7 @@ class InvoiceItem(object):
         self.net = decimal.Decimal(d["detailed_price"]["net"])
         self.gross = decimal.Decimal(d["detailed_price"]["gross"])
         self.description = d["description"]
-        self.category = self._cklass(self.connection, {"code": d["category"]})
+        self.category = self._cklass(self.api, {"code": d["category"]})
 
     def to_holvi_dict(self):
         if not self.gross:
@@ -123,7 +115,7 @@ class InvoiceAPI(object):
         #print("Got invoices=%s" % invoices)
         ret = []
         for ijson in invoices:
-            ret.append(Invoice(self.connection, ijson))
+            ret.append(Invoice(self, ijson))
         return ret
 
     def create_invoice(self, invoice):
@@ -135,4 +127,4 @@ class InvoiceAPI(object):
         url = self.base_url + '{code}/'.format(code=invoice_code)
         ijson = self.connection.make_get(url)
         #print("Got ijson=%s" % ijson)
-        return Invoice(self.connection, ijson)
+        return Invoice(self, ijson)

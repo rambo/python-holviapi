@@ -7,22 +7,9 @@ from .utils import HolviObject
 @python_2_unicode_compatible
 class Order(HolviObject):
     """This represents a checkout in the Holvi system"""
-    def __init__(self, connection, jsondata=None):
-        self.connection = connection
-        if not jsondata:
-            self._init_empty()
-        else:
-            self._jsondata = jsondata
-            # TODO: parse the product lines to list of OrderProduct objects
-
-    def _init_empty(self):
-        """Creates the base set of attributes order has/needs"""
-        raise NotImplementedError()
-
-    def save(self):
-        """Creates or updates the order"""
-        raise NotImplementedError()
-        # TODO: remember to convert the product objects back to Holvi compatible dictionary (which will then be converted to JSON by the actual connection)
+    def __init__(self, api, jsondata=None):
+        super(Order, self).__init__(api, jsondata)
+        # TODO: parse the product lines to list of OrderProduct objects
 
 
 @python_2_unicode_compatible
@@ -43,7 +30,7 @@ class CheckoutAPI(object):
         # TODO: Make generator to handle the paging
         ret = []
         for ojson in orders['results']:
-            ret.append(Order(self.connection, ojson))
+            ret.append(Order(self, ojson))
         return ret
 
     def get_order(self, order_code):

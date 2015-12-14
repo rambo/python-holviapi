@@ -7,20 +7,6 @@ from .utils import HolviObject
 @python_2_unicode_compatible
 class Product(HolviObject):
     """This represents a product in the Holvi system"""
-    def __init__(self, connection, jsondata=None):
-        self.connection = connection
-        if not jsondata:
-            self._init_empty()
-        else:
-            self._jsondata = jsondata
-
-    def _init_empty(self):
-        """Creates the base set of attributes product has/needs"""
-        raise NotImplementedError()
-
-    def save(self):
-        """Creates or updates the product"""
-        raise NotImplementedError()
 
 
 class ShopProduct(Product):
@@ -51,5 +37,5 @@ class ProductsAPI(object):
         #print("Got obdata=%s" % obdata)
         ret = []
         for pjson in obdata['products']:
-            ret.append(ShopProduct(self.connection, pjson))
+            ret.append(ShopProduct(self, pjson))
         return ret

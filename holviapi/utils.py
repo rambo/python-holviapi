@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import six
 from future.utils import python_2_unicode_compatible, raise_from
+import itertools as it
 
 @python_2_unicode_compatible
 class JSONObject(object):
@@ -29,6 +30,23 @@ class JSONObject(object):
             except KeyError as e:
                 raise_from(AttributeError(six.u(e)), e)
 
-class HolviObject(JSONObject):
-    connection = None
 
+class HolviObject(JSONObject):
+    """Holvi objects are JSONObject with reference to the relevant API instance"""
+    api = None
+
+    def __init__(self, api, jsondata=None):
+        # We are not calling super() on purpose
+        self.api = api
+        if not jsondata:
+            self._init_empty()
+        else:
+            self._jsondata = jsondata
+
+    def _init_empty(self):
+        """Creates the base set of attributes object has/needs"""
+        raise NotImplementedError()
+
+    def save(self):
+        """Creates or updates the object"""
+        raise NotImplementedError()
