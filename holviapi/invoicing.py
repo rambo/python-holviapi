@@ -3,6 +3,7 @@ from __future__ import print_function
 import six
 from future.utils import python_2_unicode_compatible, raise_from
 import datetime
+import decimal
 from .utils import HolviObject
 from .categories import IncomeCategory
 
@@ -73,27 +74,30 @@ class InvoiceItem(object):
     description = None
     net = None
     gross = None
+    _cklass = IncomeCategory
 
-    def __init__(self, connection, net=None, desc=None, holvi_dict=None):
+    def __init__(self, connection, net=None, desc=None, holvi_dict=None, cklass=None):
+        if cklass:
+            self._cklass = cklass
         self.connection = connection
-        self.net=net
+        self.net = net
         self.description = desc
         if holvi_dict:
             self.from_holvi_dict(holvi_dict)
 
     def from_holvi_dict(self, d):
-        self.net = d["detailed_price"]["net"]
-        self.gross = d["detailed_price"]["gross"]
+        self.net = decimal.Decimal(d["detailed_price"]["net"])
+        self.gross = decimal.Decimal(d["detailed_price"]["gross"])
         self.description = d["description"]
-        self.category = IncomeCategory(self.connection, {"code": d["category"]})
+        self.category = self._cklass(self.connection, {"code": d["category"]})
 
     def to_holvi_dict(self):
         if not self.gross:
             self.gross = self.net
         r = {
             "detailed_price": {
-              "net": self.net,
-              "gross": self.gross,
+              "net": six.u(self.net.quantize(Decimal('.01'))),
+              "gross": six.u(self.gross.quantize(Decimal('.01'))),
             },
             "description": self.description,
             "category": "",
