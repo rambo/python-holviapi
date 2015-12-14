@@ -35,7 +35,7 @@ class Order(object):
 @python_2_unicode_compatible
 class CheckoutAPI(object):
     """Handles the operations on orders, instantiate with a Connection object"""
-    base_url_fmt = 'checkout/v2/pool/'
+    base_url_fmt = 'checkout/v2/'
 
     def __init__(self, connection):
         self.connection = connection
@@ -43,7 +43,7 @@ class CheckoutAPI(object):
 
     def list_orders(self):
         """Lists all orders in the system"""
-        url = self.base_url + '{pool}/order/'.format(pool=self.connection.pool)
+        url = self.base_url + 'pool/{pool}/order/'.format(pool=self.connection.pool)
         # TODO add filtering support
         orders = self.connection.make_get(url)
         #print("Got orders=%s" % orders)
@@ -52,3 +52,10 @@ class CheckoutAPI(object):
         for ojson in orders['results']:
             ret.append(Order(self.connection, ojson))
         return ret
+
+    def get_order(self, order_code):
+        """Retvieve given Order"""
+        url = self.base_url + 'order/{code}'.format(code=order_code)
+        ojson = self.connection.make_get(url)
+        #print("Got ojson=%s" % ojson)
+        return Order(self.connection, ojson)
