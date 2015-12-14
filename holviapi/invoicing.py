@@ -43,6 +43,7 @@ class InvoiceAPI(object):
         """Lists all invoices in the system"""
         # TODO add filtering support (if/when holvi adds it)
         invoices = self.connection.make_get(self.base_url)
+        #print("Got invoices=%s" % invoices)
         ret = []
         for ijson in invoices:
             ret.append(Invoice(self.connection, ijson))
@@ -51,3 +52,10 @@ class InvoiceAPI(object):
     def create_invoice(self, invoice):
         """Takes an Invoice and creates it to Holvi"""
         raise NotImplementedError()
+
+    def get_invoice(self, invoice_code):
+        """Retvieve given Invoice"""
+        url = self.base_url + '{code}/'.format(code=invoice_code)
+        ijson = self.connection.make_get(url)
+        #print("Got ijson=%s" % ijson)
+        return Invoice(self.connection, ijson)
