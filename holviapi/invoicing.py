@@ -25,6 +25,22 @@ class Invoice(object):
         """Creates the base set of attributes invoice has/needs"""
         raise NotImplementedError()
 
+    def send(self, send_email=True):
+        """Marks the invoice as sent in Holvi
+
+        If send_email is False then the invoice is *not* automatically emailed to the recipient
+        and your must take care of sending the invoice yourself.
+        """
+        url = str(self.connection.base_url_fmt + 'pool/{pool}/invoice/{code}/status/').format(pool=self.connection.pool, code=self.code)
+        payload = {
+            'mark_as_sent': True,
+            'send_email': send_email,
+            'active': True, # It must be active to be sent...
+        }
+        stat = self.connection.make_put(url, payload)
+        #print("Got stat=%s" % stat)
+        # TODO: Check the stat and raise error if daft is not false or active is not true ?
+
     def save(self):
         """Creates or updates the invoice"""
         raise NotImplementedError()
