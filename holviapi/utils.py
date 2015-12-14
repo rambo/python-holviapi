@@ -50,3 +50,24 @@ class HolviObject(JSONObject):
     def save(self):
         """Creates or updates the object"""
         raise NotImplementedError()
+
+
+def int2fin_reference(n):
+    """Calculates a checksum for a Finnish national reference number"""
+    checksum = 10-(sum([int(c)*i for c,i in zip(str(n)[::-1], it.cycle((7,3,1)))]) % 10)
+    return "%s%s" % (n, checksum)
+
+
+def fin_reference_isvalid(n):
+    """Check that the given Finnish national reference number is valid (ie the checksum is valid)"""
+    return int2fin_reference(str(n)[:-1]) == str(n)
+
+
+def int2iso_reference(n):
+    """Calculates checksum (and adds the RF prefix) for an international reference number"""
+    n = int(n)
+    nt = n * 1000000 + 271500
+    checksum = 98 - (nt % 97)
+    return "RF%02d%d" % (checksum, n)
+
+# TODO: Add function to check that the iso reference is valid
