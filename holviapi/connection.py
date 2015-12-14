@@ -2,7 +2,9 @@
 from __future__ import print_function
 from future.utils import python_2_unicode_compatible
 import requests
-
+import requests_cache
+# Cache GET results for 5min to save Holvis bandwidth (also the API is a bit on the slow side so this makes things faster for us)
+requests_cache.install_cache('Holvi-REST', 'memory', expire_after=300)
 
 @python_2_unicode_compatible
 class Connection(object):
@@ -25,4 +27,6 @@ class Connection(object):
         return r.json()
 
     def make_post(self, url, params, method='POST'):
+        # We can't trust the cache after we have made changes of our own
+        requests_cache.clear()
         raise NotImplementedError()
