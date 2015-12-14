@@ -22,11 +22,11 @@ class Category(object):
             raise_from(AttributeError, e)
 
     def _init_empty(self):
-        """Creates the base set of attributes order has/needs"""
+        """Creates the base set of attributes category has/needs"""
         raise NotImplementedError()
 
     def save(self):
-        """Creates or updates the product"""
+        """Creates or updates the category"""
         raise NotImplementedError()
 
 

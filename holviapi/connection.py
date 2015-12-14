@@ -21,6 +21,7 @@ class Connection(object):
         self.key = authkey
 
     def _init_session(self):
+        """Iniitializes a requests.Session for us if not already initialized"""
         if not self.session:
             self.session = requests.Session()
             self.session.headers.update({
@@ -29,6 +30,7 @@ class Connection(object):
             })
 
     def make_get(self, url, params={}):
+        """Make a GET request"""
         self._init_session()
         r = self.session.get(url, params=params)
         try:

@@ -22,7 +22,7 @@ class Product(object):
             raise_from(AttributeError, e)
 
     def _init_empty(self):
-        """Creates the base set of attributes order has/needs"""
+        """Creates the base set of attributes product has/needs"""
         raise NotImplementedError()
 
     def save(self):
@@ -36,7 +36,7 @@ class ShopProduct(Product):
 
 
 class OrderProduct(Product):
-    """Product from from a checkout, has for example the answers to checkout questions"""
+    """Product from from a checkout"""
     pass
 
 
