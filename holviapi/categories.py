@@ -54,7 +54,7 @@ class CategoriesAPI(object):
         """Lists all income categories in the system"""
         url = self.base_url
         obdata = self.connection.make_get(url)
-        print("Got obdata=%s" % obdata)
+        #print("Got obdata=%s" % obdata)
         ret = []
         for icjson in obdata['income_categories']:
             ret.append(IncomeCategory(self.connection, icjson))
@@ -64,7 +64,7 @@ class CategoriesAPI(object):
         """Lists all expense categories in the system"""
         url = self.base_url
         obdata = self.connection.make_get(url)
-        print("Got obdata=%s" % obdata)
+        #print("Got obdata=%s" % obdata)
         ret = []
         for ecjson in obdata['expense_categories']:
             ret.append(ExpenseCategory(self.connection, ecjson))

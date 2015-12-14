@@ -12,7 +12,7 @@ class Order(object):
             self._init_empty()
         else:
             self._jsondata = jsondata
-            # TODO: parse the product lines to list of Product objects
+            # TODO: parse the product lines to list of OrderProduct objects
 
     def __getattr__(self, attr):
         if attr[0] != '_':

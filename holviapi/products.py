@@ -30,6 +30,16 @@ class Product(object):
         raise NotImplementedError()
 
 
+class ShopProduct(Product):
+    """Product from the open budget api, has slightly different angle to things"""
+    pass
+
+
+class OrderProduct(Product):
+    """Product from from a checkout, has for example the answers to checkout questions"""
+    pass
+
+
 @python_2_unicode_compatible
 class ProductsAPI(object):
     """Handles the operations on products, instantiate with a Connection object"""
@@ -45,8 +55,8 @@ class ProductsAPI(object):
         url = self.base_url
         # TODO add filtering support
         obdata = self.connection.make_get(url)
-        print("Got obdata=%s" % obdata)
+        #print("Got obdata=%s" % obdata)
         ret = []
         for pjson in obdata['products']:
-            ret.append(Product(self.connection, pjson))
+            ret.append(ShopProduct(self.connection, pjson))
         return ret
