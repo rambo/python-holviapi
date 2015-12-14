@@ -1,29 +1,45 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+import six
 from future.utils import python_2_unicode_compatible, raise_from
-
+import datetime
+from .utils import HolviObject
+from .categories import IncomeCategory
 
 @python_2_unicode_compatible
-class Invoice(object):
+class Invoice(HolviObject):
     """This represents an invoice in the Holvi system"""
+    items = []
+
     def __init__(self, connection, jsondata=None):
         self.connection = connection
         if not jsondata:
             self._init_empty()
         else:
             self._jsondata = jsondata
-
-    def __getattr__(self, attr):
-        if attr[0] != '_':
-            return self._jsondata[attr]
-        try:
-            return object.__getattribute__(self, attr)
-        except KeyError as e:
-            raise_from(AttributeError, e)
+            self.items = []
+            for item in self._jsondata["items"]:
+                self.items.append(InvoiceItem(self.connection, holvi_dict=item))
 
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
-        raise NotImplementedError()
+        self._jsondata = {
+          "currency": "EUR",
+          "subject": "",
+          "due_date": (datetime.datetime.now().date() + datetime.timedelta(days=14)).isoformat(),
+          "issue_date": datetime.datetime.now().date().isoformat(),
+          "number": None,
+          "type": "outbound",
+          "receiver": {
+            "name": "",
+            "email": "",
+            "street": "",
+            "city": "",
+            "postcode": "",
+            "country": ""
+          },
+          "items": [],
+        }
 
     def send(self, send_email=True):
         """Marks the invoice as sent in Holvi
@@ -41,9 +57,50 @@ class Invoice(object):
         #print("Got stat=%s" % stat)
         # TODO: Check the stat and raise error if daft is not false or active is not true ?
 
+    def to_holvi_dict(self):
+        self._jsondata["items"] = []
+        for item in self.items:
+            self._jsondata["items"].append(item.to_holvi_dict())
+        return self._jsondata
+
     def save(self):
         """Creates or updates the invoice"""
         raise NotImplementedError()
+
+
+class InvoiceItem(object):
+    category = None
+    description = None
+    net = None
+    gross = None
+
+    def __init__(self, connection, net=None, desc=None, holvi_dict=None):
+        self.connection = connection
+        self.net=net
+        self.description = desc
+        if holvi_dict:
+            self.from_holvi_dict(holvi_dict)
+
+    def from_holvi_dict(self, d):
+        self.net = d["detailed_price"]["net"]
+        self.gross = d["detailed_price"]["gross"]
+        self.description = d["description"]
+        self.category = IncomeCategory(self.connection, {"code": d["category"]})
+
+    def to_holvi_dict(self):
+        if not self.gross:
+            self.gross = self.net
+        r = {
+            "detailed_price": {
+              "net": self.net,
+              "gross": self.gross,
+            },
+            "description": self.description,
+            "category": "",
+        }
+        if self.category:
+            r["category"] = self.category.code
+        return r
 
 
 @python_2_unicode_compatible

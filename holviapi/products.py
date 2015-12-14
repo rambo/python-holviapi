@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from future.utils import python_2_unicode_compatible, raise_from
+from .utils import HolviObject
 
 
 @python_2_unicode_compatible
-class Product(object):
+class Product(HolviObject):
     """This represents a product in the Holvi system"""
     def __init__(self, connection, jsondata=None):
         self.connection = connection
@@ -12,14 +13,6 @@ class Product(object):
             self._init_empty()
         else:
             self._jsondata = jsondata
-
-    def __getattr__(self, attr):
-        if attr[0] != '_':
-            return self._jsondata[attr]
-        try:
-            return object.__getattribute__(self, attr)
-        except KeyError as e:
-            raise_from(AttributeError, e)
 
     def _init_empty(self):
         """Creates the base set of attributes product has/needs"""
