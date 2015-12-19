@@ -12,7 +12,8 @@ class Invoice(HolviObject):
     items = []
     issue_date = None
     due_date = None
-    _valid_keys = ['currency', 'issue_date', 'due_date', 'items', 'receiver', 'type', 'number', 'subject'] # Same for both create and update
+    _valid_keys = ("currency", "issue_date", "due_date", "items", "receiver", "type", "number", "subject") # Same for both create and update
+    _patch_valid_keys = ("due_date", "issue_date", "subject", "number", "receiver", "items") # For sent
 
     def _map_holvi_json_properties(self):
         self.items = []
@@ -75,16 +76,17 @@ class Invoice(HolviObject):
             raise HolviError("No subject")
         send_json = self.to_holvi_dict()
         if self.code:
-            #print("Updating invoice %s" % self.code)
             url = six.u(self.api.base_url + '{code}/').format(code=self.code)
-            stat = self.api.connection.make_put(url, send_json)
-            #print("Got stat=%s" % stat)
+            if not self.draft:
+                del(send_json["items"]) # Item *descriptions* could in theory be edited but that gets complicated
+                send_patch = { k:v for (k,v) in send_json.items() if k in self._patch_valid_keys }
+                stat = self.api.connection.make_patch(url, send_patch)
+            else:
+                stat = self.api.connection.make_put(url, send_json)
             return Invoice(self.api, stat)
         else:
-            #print("Creating new invoice %s" % send_json["subject"])
             url = six.u(self.api.base_url)
             stat = self.api.connection.make_post(url, send_json)
-            #print("Got stat=%s" % stat)
             return Invoice(self.api, stat)
 
 
@@ -96,7 +98,8 @@ class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject sin
     net = None
     gross = None
     _cklass = IncomeCategory
-    _valid_keys = ['detailed_price', 'category', 'description'] # Same for both create and update
+    _valid_keys = ("detailed_price", "category", "description") # Same for both create and update
+    _patch_valid_keys = ("description", "code")
 
     def __init__(self, invoice, holvi_dict={}, cklass=None):
         self.invoice = invoice
