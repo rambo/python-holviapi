@@ -156,10 +156,6 @@ class InvoiceAPI(object):
             ret.append(Invoice(self, ijson))
         return ret
 
-    def create_invoice(self, invoice):
-        """Takes an Invoice and creates it to Holvi"""
-        raise NotImplementedError()
-
     def get_invoice(self, invoice_code):
         """Retvieve given Invoice"""
         url = self.base_url + '{code}/'.format(code=invoice_code)
