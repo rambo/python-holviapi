@@ -34,6 +34,8 @@ class JSONObject(object):
 class HolviObject(JSONObject):
     """Holvi objects are JSONObject with reference to the relevant API instance"""
     api = None
+    _lazy = False
+    _fetch_method = None
 
     def __init__(self, api, jsondata=None):
         # We are not calling super() on purpose
@@ -41,7 +43,24 @@ class HolviObject(JSONObject):
         if not jsondata:
             self._init_empty()
         else:
+            if (    len(jsondata) == 1
+                and jsondata.get('code')):
+                    self._lazy = True
             self._jsondata = jsondata
+
+    def __getattr__(self, attr):
+        if object.__getattribute__(self, '_lazy'):
+            #print("We're lazy instance!")
+            f = object.__getattribute__(self, '_fetch_method')
+            if f is not None:
+                #print("Trying to fetch full one with %s" % f)
+                new = f(object.__getattribute__(self, '_jsondata')['code'])
+                self._jsondata = new._jsondata
+                self._lazy = False
+            else:
+                #print("No fetch method, giving up")
+                pass
+        return super(HolviObject, self).__getattr__(attr)
 
     def _init_empty(self):
         """Creates the base set of attributes object has/needs"""

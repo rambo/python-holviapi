@@ -3,20 +3,24 @@ from __future__ import print_function
 import six
 from future.utils import python_2_unicode_compatible, raise_from
 import datetime
-import decimal
-from .utils import HolviObject
-from .categories import IncomeCategory
+from decimal import Decimal
+from .utils import HolviObject, JSONObject
+from .categories import IncomeCategory, CategoriesAPI
 
 @python_2_unicode_compatible
 class Invoice(HolviObject):
     """This represents an invoice in the Holvi system"""
     items = []
+    issue_date = None
+    due_date = None
 
     def __init__(self, api, jsondata=None):
         super(Invoice, self).__init__(api, jsondata)
         self.items = []
         for item in self._jsondata["items"]:
             self.items.append(InvoiceItem(self, holvi_dict=item))
+        self.issue_date = datetime.datetime.strptime(self._jsondata["issue_date"], "%Y-%m-%d").date()
+        self.due_date = datetime.datetime.strptime(self._jsondata["due_date"], "%Y-%m-%d").date()
 
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
@@ -58,45 +62,43 @@ class Invoice(HolviObject):
         self._jsondata["items"] = []
         for item in self.items:
             self._jsondata["items"].append(item.to_holvi_dict())
+        self._jsondata["issue_date"] = self.issue_date.isoformat()
+        self._jsondata["due_date"] = self.due_date.isoformat()
         return self._jsondata
 
 
-class InvoiceItem(object):
+class InvoiceItem(JSONObject):
+    api = None
+    invoice = None
     category = None
-    description = None
     net = None
     gross = None
     _cklass = IncomeCategory
 
-    def __init__(self, api, net=None, desc=None, holvi_dict=None, cklass=None):
+    def __init__(self, invoice, holvi_dict={}, cklass=None):
+        self.invoice = invoice
+        self.api = self.invoice.api
         if cklass:
             self._cklass = cklass
-        self.api = api
-        self.net = net
-        self.description = desc
-        if holvi_dict:
-            self.from_holvi_dict(holvi_dict)
+        super(InvoiceItem, self).__init__(**holvi_dict)
+        self._map_holvi_json_properties()
 
-    def from_holvi_dict(self, d):
-        self.net = decimal.Decimal(d["detailed_price"]["net"])
-        self.gross = decimal.Decimal(d["detailed_price"]["gross"])
-        self.description = d["description"]
-        self.category = self._cklass(self.api, {"code": d["category"]})
+    def _map_holvi_json_properties(self):
+        self.net = Decimal(self._jsondata["detailed_price"]["net"])
+        self.gross = Decimal(self._jsondata["detailed_price"]["gross"])
+        if self._jsondata.get("category"):
+            self.category = self._cklass(self.api.categories_api, {"code": self._jsondata["category"]})
 
     def to_holvi_dict(self):
         if not self.gross:
             self.gross = self.net
-        r = {
-            "detailed_price": {
-              "net": six.u(self.net.quantize(Decimal('.01'))),
-              "gross": six.u(self.gross.quantize(Decimal('.01'))),
-            },
-            "description": self.description,
-            "category": "",
-        }
+        if not self._jsondata.get("detailed_price"):
+            self._jsondata["detailed_price"] = { 'net': '0.00', 'gross': '0.00', 'currency': 'EUR', 'vat_rate': None }
+        self._jsondata["detailed_price"]["net"] = six.u(self.net.quantize(Decimal('.01')))
+        self._jsondata["detailed_price"]["gross"] = six.u(self.net.quantize(Decimal('.01')))
         if self.category:
-            r["category"] = self.category.code
-        return r
+            self._jsondata["category"] = self.category.code
+        return self._jsondata
 
 
 @python_2_unicode_compatible
@@ -106,6 +108,7 @@ class InvoiceAPI(object):
 
     def __init__(self, connection):
         self.connection = connection
+        self.categories_api = CategoriesAPI(self.connection)
         self.base_url = str(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
 
     def list_invoices(self):

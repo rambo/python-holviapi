@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from future.utils import python_2_unicode_compatible, raise_from
+import itertools
 from .utils import HolviObject
 
 
 @python_2_unicode_compatible
 class Category(HolviObject):
     """Baseclass for income/expense categories, do not instantiate directly"""
+    def __init__(self, api, jsondata=None, **kwargs):
+        self._fetch_method = api.get_category
+        super(Category, self).__init__(api, jsondata, **kwargs)
 
 
 class IncomeCategory(Category):
     """This represents an income category in the Holvi system"""
     pass
-
 
 class ExpenseCategory(Category):
     """This represents an expense category in the Holvi system"""
@@ -48,3 +51,13 @@ class CategoriesAPI(object):
         for ecjson in obdata['expense_categories']:
             ret.append(ExpenseCategory(self, ecjson))
         return ret
+
+    def get_category(self, code):
+        """Gets category with given code
+
+        NOTE: Filters the list of income and expense categories in this end due to
+        API limitations"""
+        candidates = filter(lambda c: c.code == code, itertools.chain(self.list_income_categories(), self.list_expense_categories()))
+        if not candidates:
+            return None
+        return next(candidates)
