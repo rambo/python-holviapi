@@ -12,6 +12,7 @@ class Invoice(HolviObject):
     items = []
     issue_date = None
     due_date = None
+    _valid_keys = ['currency', 'issue_date', 'due_date', 'items', 'receiver', 'type', 'number', 'subject'] # Same for both create and update
 
     def _map_holvi_json_properties(self):
         self.items = []
@@ -23,21 +24,22 @@ class Invoice(HolviObject):
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
         self._jsondata = {
-          "currency": "EUR",
-          "subject": "",
-          "due_date": (datetime.datetime.now().date() + datetime.timedelta(days=14)).isoformat(),
-          "issue_date": datetime.datetime.now().date().isoformat(),
-          "number": None,
-          "type": "outbound",
-          "receiver": {
-            "name": "",
-            "email": "",
-            "street": "",
-            "city": "",
-            "postcode": "",
-            "country": ""
-          },
-          "items": [],
+            "code": None,
+            "currency": "EUR",
+            "subject": "",
+            "due_date": (datetime.datetime.now().date() + datetime.timedelta(days=14)).isoformat(),
+            "issue_date": datetime.datetime.now().date().isoformat(),
+            "number": None,
+            "type": "outbound",
+            "receiver": {
+                "name": "",
+                "email": "",
+                "street": "",
+                "city": "",
+                "postcode": "",
+                "country": ""
+            },
+            "items": [],
         }
 
     def send(self, send_email=True):
@@ -46,7 +48,7 @@ class Invoice(HolviObject):
         If send_email is False then the invoice is *not* automatically emailed to the recipient
         and your must take care of sending the invoice yourself.
         """
-        url = str(self.api.base_url + '{code}/status/').format(code=self.code)
+        url = six.u(self.api.base_url + '{code}/status/').format(code=self.code)
         payload = {
             'mark_as_sent': True,
             'send_email': send_email,
@@ -63,7 +65,27 @@ class Invoice(HolviObject):
             self._jsondata["items"].append(item.to_holvi_dict())
         self._jsondata["issue_date"] = self.issue_date.isoformat()
         self._jsondata["due_date"] = self.due_date.isoformat()
-        return self._jsondata
+        return { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+
+    def save(self):
+        """Saves this invoice to Holvi, returns the created/updated invoice"""
+        if not self.items:
+            raise HolviError("No items")
+        if not self.subject:
+            raise HolviError("No subject")
+        send_json = self.to_holvi_dict()
+        if self.code:
+            #print("Updating invoice %s" % self.code)
+            url = six.u(self.api.base_url + '{code}/').format(code=self.code)
+            stat = self.api.connection.make_put(url, send_json)
+            #print("Got stat=%s" % stat)
+            return Invoice(self.api, stat)
+        else:
+            #print("Creating new invoice %s" % send_json["subject"])
+            url = six.u(self.api.base_url)
+            stat = self.api.connection.make_post(url, send_json)
+            #print("Got stat=%s" % stat)
+            return Invoice(self.api, stat)
 
 
 class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
@@ -74,6 +96,7 @@ class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject sin
     net = None
     gross = None
     _cklass = IncomeCategory
+    _valid_keys = ['detailed_price', 'category', 'description'] # Same for both create and update
 
     def __init__(self, invoice, holvi_dict={}, cklass=None):
         self.invoice = invoice
@@ -84,8 +107,10 @@ class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject sin
         self._map_holvi_json_properties()
 
     def _map_holvi_json_properties(self):
-        self.net = Decimal(self._jsondata["detailed_price"]["net"])
-        self.gross = Decimal(self._jsondata["detailed_price"]["gross"])
+        if not self._jsondata.get("detailed_price"):
+            self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" }
+        self.net = Decimal(self._jsondata["detailed_price"].get("net"))
+        self.gross = Decimal(self._jsondata["detailed_price"].get("gross"))
         if self._jsondata.get("category"):
             self.category = self._cklass(self.api.categories_api, {"code": self._jsondata["category"]})
         # PONDER: there is a 'product' key in the Holvi JSON for items but it's always None
@@ -95,12 +120,17 @@ class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject sin
         if not self.gross:
             self.gross = self.net
         if not self._jsondata.get("detailed_price"):
-            self._jsondata["detailed_price"] = { 'net': '0.00', 'gross': '0.00', 'currency': 'EUR', 'vat_rate': None }
-        self._jsondata["detailed_price"]["net"] = six.u(self.net.quantize(Decimal('.01')))
-        self._jsondata["detailed_price"]["gross"] = six.u(self.net.quantize(Decimal('.01')))
+            self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" } #  "currency" and "vat_rate" are not sent to Holvi
+        self._jsondata["detailed_price"]["net"] = self.net.quantize(Decimal(".01")).__str__() # six.u messes this up
+        self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__() # six.u messes this up
         if self.category:
             self._jsondata["category"] = self.category.code
-        return self._jsondata
+        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+        if "vat_rate" in filtered["detailed_price"]:
+            del(filtered["detailed_price"]["vat_rate"])
+        if "currency" in filtered["detailed_price"]:
+            del(filtered["detailed_price"]["currency"])
+        return filtered
 
 
 @python_2_unicode_compatible
@@ -111,7 +141,7 @@ class InvoiceAPI(object):
     def __init__(self, connection):
         self.connection = connection
         self.categories_api = CategoriesAPI(self.connection)
-        self.base_url = str(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
+        self.base_url = six.u(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
 
     def list_invoices(self):
         """Lists all invoices in the system"""
