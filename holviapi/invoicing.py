@@ -7,15 +7,13 @@ from decimal import Decimal
 from .utils import HolviObject, JSONObject
 from .categories import IncomeCategory, CategoriesAPI
 
-@python_2_unicode_compatible
 class Invoice(HolviObject):
     """This represents an invoice in the Holvi system"""
     items = []
     issue_date = None
     due_date = None
 
-    def __init__(self, api, jsondata=None):
-        super(Invoice, self).__init__(api, jsondata)
+    def _map_holvi_json_properties(self):
         self.items = []
         for item in self._jsondata["items"]:
             self.items.append(InvoiceItem(self, holvi_dict=item))
@@ -59,6 +57,7 @@ class Invoice(HolviObject):
         # TODO: Check the stat and raise error if daft is not false or active is not true ?
 
     def to_holvi_dict(self):
+        """Convert our Python object to JSON acceptable to Holvi API"""
         self._jsondata["items"] = []
         for item in self.items:
             self._jsondata["items"].append(item.to_holvi_dict())
@@ -67,7 +66,8 @@ class Invoice(HolviObject):
         return self._jsondata
 
 
-class InvoiceItem(JSONObject):
+class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
+    """Pythonic wrapper for the items in an Invoice"""
     api = None
     invoice = None
     category = None

@@ -47,6 +47,13 @@ class HolviObject(JSONObject):
                 and jsondata.get('code')):
                     self._lazy = True
             self._jsondata = jsondata
+        self._map_holvi_json_properties()
+
+    def _map_holvi_json_properties(self):
+        """For mapping properties from _jsondata to something more Pythonic
+
+        For really simple objects there is no need to implement this"""
+        pass
 
     def __getattr__(self, attr):
         if object.__getattribute__(self, '_lazy'):

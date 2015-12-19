@@ -6,7 +6,6 @@ from .products import ProductsAPI
 from .categories import IncomeCategory, CategoriesAPI
 
 
-@python_2_unicode_compatible
 class Order(HolviObject):
     """This represents a checkout in the Holvi system"""
     def __init__(self, api, jsondata=None):

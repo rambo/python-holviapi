@@ -5,7 +5,6 @@ import itertools
 from .utils import HolviObject
 
 
-@python_2_unicode_compatible
 class Category(HolviObject):
     """Baseclass for income/expense categories, do not instantiate directly"""
     def __init__(self, api, jsondata=None, **kwargs):
