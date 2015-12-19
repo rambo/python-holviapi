@@ -88,6 +88,8 @@ class InvoiceItem(JSONObject):
         self.gross = Decimal(self._jsondata["detailed_price"]["gross"])
         if self._jsondata.get("category"):
             self.category = self._cklass(self.api.categories_api, {"code": self._jsondata["category"]})
+        # PONDER: there is a 'product' key in the Holvi JSON for items but it's always None
+        #         and the web UI does not allow setting products to invoices
 
     def to_holvi_dict(self):
         if not self.gross:
