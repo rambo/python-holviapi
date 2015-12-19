@@ -2,6 +2,8 @@
 from __future__ import print_function
 from future.utils import python_2_unicode_compatible, raise_from
 from .utils import HolviObject
+from .products import ProductsAPI
+from .categories import IncomeCategory, CategoriesAPI
 
 
 @python_2_unicode_compatible
@@ -19,6 +21,8 @@ class CheckoutAPI(object):
 
     def __init__(self, connection):
         self.connection = connection
+        self.categories_api = CategoriesAPI(self.connection)
+        self.products_api = ProductsAPI(self.connection)
         self.base_url = str(connection.base_url_fmt + self.base_url_fmt)
 
     def list_orders(self):
