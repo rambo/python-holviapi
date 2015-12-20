@@ -95,6 +95,20 @@ class Invoice(HolviObject):
             stat = self.api.connection.make_post(url, send_json)
             return Invoice(self.api, stat)
 
+    def delete(self, undelete=False):
+        """Mark invoice as deleted/undeleted in Holvi
+
+        NOTE: It seems undeleting invoices is not actually possible even though API docs claim so,
+        I get "Credited or void invoices cannot be restored" as error when trying to undelete.
+        """
+        url = str(self.api.base_url + '{code}/status/').format(code=self.code) # six.u messes this up
+        payload = {
+            'active': undelete,
+        }
+        stat = self.api.connection.make_put(url, payload)
+        #print("Got stat=%s" % stat)
+        # TODO: Check the stat and raise error if active is not what we expected ?
+
 
 class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
     """Pythonic wrapper for the items in an Invoice"""
