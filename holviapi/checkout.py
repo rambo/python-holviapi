@@ -4,13 +4,15 @@ from future.utils import python_2_unicode_compatible, raise_from
 from .utils import HolviObject
 from .products import ProductsAPI
 from .categories import IncomeCategory, CategoriesAPI
+from .contacts import OrderContact
 
 
 class Order(HolviObject):
     """This represents a checkout in the Holvi system"""
-    def __init__(self, api, jsondata=None):
-        super(Order, self).__init__(api, jsondata)
-        # TODO: parse the product lines to list of OrderProduct objects
+    buyer = None
+
+    def _map_holvi_json_properties(self):
+        self.buyer = OrderContact({ k:v for (k,v) in self._jsondata.items() if k in OrderContact._valid_keys })
 
 
 @python_2_unicode_compatible

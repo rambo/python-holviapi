@@ -11,3 +11,32 @@ class InvoiceContact(JSONObject): # We extend JSONObject instead of HolviObject 
 
     def to_holvi_dict(self):
         return { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+
+class OrderContact(JSONObject): # aka buyer
+    """Pythonic wrapper for order contact info, aka buyer"""
+    _valid_keys = ["postcode", "country", "lastname", "country_code", "street", "email", "company", "firstname", "city", "eu_vat_identifier"]
+
+    def __init__(self, jsondata=None):
+        if not jsondata:
+            self._init_empty()
+        else:
+            self._jsondata.update(jsondata)
+        # Not calling super on purpose
+
+    def _init_empty(self):
+        self._jsondata = {
+            "city": "",
+            "company": "",
+            "country": "",
+            "country_code": "",
+            "email": "",
+            "firstname": "",
+            "lastname": "",
+            "postcode": "",
+            "street": "",
+            "eu_vat_identifier": "",
+        }
+
+    def to_holvi_dict(self, patch=False):
+        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+        return filtered
