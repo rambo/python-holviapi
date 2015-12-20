@@ -64,6 +64,7 @@ class HolviObject(JSONObject):
                 #print("Trying to fetch full one with %s" % f)
                 new = f(object.__getattribute__(self, '_jsondata')['code'])
                 self._jsondata = new._jsondata
+                self._map_holvi_json_properties()
                 self._lazy = False
             else:
                 #print("No fetch method, giving up")
