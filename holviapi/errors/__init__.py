@@ -9,8 +9,16 @@ class HolviError(RuntimeError):
         super(HolviError, self).__init__(*args, **kwargs)
 
 class ApiError(HTTPError, HolviError):
+    response = None
+    error_details = {}
+
     def __init__(self, *args, **kwargs):
         super(ApiError, self).__init__(*args, **kwargs)
+        if self.response is not None:
+            self.error_details = self.response.json()
+
+    def __str__(self, *args, **kwargs):
+        return super(ApiError, self).__str__(*args, **kwargs) + " Details: %s" % self.error_details
 
 class AuthenticationError(ApiError):
     def __init__(self, *args, **kwargs):
