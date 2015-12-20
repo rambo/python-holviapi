@@ -6,12 +6,14 @@ import datetime
 from decimal import Decimal
 from .utils import HolviObject, JSONObject
 from .categories import IncomeCategory, CategoriesAPI
+from .contacts import InvoiceContact
 
 class Invoice(HolviObject):
     """This represents an invoice in the Holvi system"""
     items = []
     issue_date = None
     due_date = None
+    receiver = None
     _valid_keys = ("currency", "issue_date", "due_date", "items", "receiver", "type", "number", "subject") # Same for both create and update
     _patch_valid_keys = ("due_date", "issue_date", "subject", "number", "receiver", "items") # For sent
 
@@ -21,6 +23,7 @@ class Invoice(HolviObject):
             self.items.append(InvoiceItem(self, holvi_dict=item))
         self.issue_date = datetime.datetime.strptime(self._jsondata["issue_date"], "%Y-%m-%d").date()
         self.due_date = datetime.datetime.strptime(self._jsondata["due_date"], "%Y-%m-%d").date()
+        self.receiver = InvoiceContact(**self._jsondata["receiver"])
 
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
@@ -66,6 +69,7 @@ class Invoice(HolviObject):
             self._jsondata["items"].append(item.to_holvi_dict())
         self._jsondata["issue_date"] = self.issue_date.isoformat()
         self._jsondata["due_date"] = self.due_date.isoformat()
+        self._jsondata["receiver"] = self.receiver.to_holvi_dict()
         return { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
 
     def save(self):
@@ -78,8 +82,10 @@ class Invoice(HolviObject):
         if self.code:
             url = six.u(self.api.base_url + '{code}/').format(code=self.code)
             if not self.draft:
-                del(send_json["items"]) # Item *descriptions* could in theory be edited but that gets complicated
                 send_patch = { k:v for (k,v) in send_json.items() if k in self._patch_valid_keys }
+                send_patch["items"] = []
+                for item in self.items:
+                    send_patch["items"].append(item.to_holvi_dict(True))
                 stat = self.api.connection.make_patch(url, send_patch)
             else:
                 stat = self.api.connection.make_put(url, send_json)
@@ -119,7 +125,7 @@ class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject sin
         # PONDER: there is a 'product' key in the Holvi JSON for items but it's always None
         #         and the web UI does not allow setting products to invoices
 
-    def to_holvi_dict(self):
+    def to_holvi_dict(self, patch=False):
         if not self.gross:
             self.gross = self.net
         if not self._jsondata.get("detailed_price"):
@@ -128,11 +134,16 @@ class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject sin
         self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__() # six.u messes this up
         if self.category:
             self._jsondata["category"] = self.category.code
-        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
-        if "vat_rate" in filtered["detailed_price"]:
-            del(filtered["detailed_price"]["vat_rate"])
-        if "currency" in filtered["detailed_price"]:
-            del(filtered["detailed_price"]["currency"])
+        if patch:
+            filter_list = self._patch_valid_keys
+        else:
+            filter_list =  self._valid_keys
+        filtered = { k:v for (k,v) in self._jsondata.items() if k in filter_list }
+        if "detailed_price" in filtered:
+            if "vat_rate" in filtered["detailed_price"]:
+                del(filtered["detailed_price"]["vat_rate"])
+            if "currency" in filtered["detailed_price"]:
+                del(filtered["detailed_price"]["currency"])
         return filtered
 
 
