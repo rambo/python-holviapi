@@ -14,7 +14,7 @@ class InvoiceContact(JSONObject): # We extend JSONObject instead of HolviObject 
 
 class OrderContact(JSONObject): # aka buyer
     """Pythonic wrapper for order contact info, aka buyer"""
-    _valid_keys = ["postcode", "country", "lastname", "country_code", "street", "email", "company", "firstname", "city", "eu_vat_identifier"]
+    _valid_keys = ("postcode", "country", "lastname", "country_code", "street", "email", "company", "firstname", "city", "eu_vat_identifier")
 
     def __init__(self, jsondata=None):
         if not jsondata:
