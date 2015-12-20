@@ -3,39 +3,47 @@ from __future__ import print_function
 import six
 from future.utils import python_2_unicode_compatible, raise_from
 import datetime
-import decimal
-from .utils import HolviObject
-from .categories import IncomeCategory
+from decimal import Decimal
+from .utils import HolviObject, JSONObject
+from .categories import IncomeCategory, CategoriesAPI
+from .contacts import InvoiceContact
 
-@python_2_unicode_compatible
 class Invoice(HolviObject):
     """This represents an invoice in the Holvi system"""
     items = []
+    issue_date = None
+    due_date = None
+    receiver = None
+    _valid_keys = ("currency", "issue_date", "due_date", "items", "receiver", "type", "number", "subject") # Same for both create and update
+    _patch_valid_keys = ("due_date", "issue_date", "subject", "number", "receiver", "items") # For sent
 
-    def __init__(self, api, jsondata=None):
-        super(Invoice, self).__init__(api, jsondata)
+    def _map_holvi_json_properties(self):
         self.items = []
         for item in self._jsondata["items"]:
             self.items.append(InvoiceItem(self, holvi_dict=item))
+        self.issue_date = datetime.datetime.strptime(self._jsondata["issue_date"], "%Y-%m-%d").date()
+        self.due_date = datetime.datetime.strptime(self._jsondata["due_date"], "%Y-%m-%d").date()
+        self.receiver = InvoiceContact(**self._jsondata["receiver"])
 
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
         self._jsondata = {
-          "currency": "EUR",
-          "subject": "",
-          "due_date": (datetime.datetime.now().date() + datetime.timedelta(days=14)).isoformat(),
-          "issue_date": datetime.datetime.now().date().isoformat(),
-          "number": None,
-          "type": "outbound",
-          "receiver": {
-            "name": "",
-            "email": "",
-            "street": "",
-            "city": "",
-            "postcode": "",
-            "country": ""
-          },
-          "items": [],
+            "code": None,
+            "currency": "EUR",
+            "subject": "",
+            "due_date": (datetime.datetime.now().date() + datetime.timedelta(days=14)).isoformat(),
+            "issue_date": datetime.datetime.now().date().isoformat(),
+            "number": None,
+            "type": "outbound",
+            "receiver": {
+                "name": "",
+                "email": "",
+                "street": "",
+                "city": "",
+                "postcode": "",
+                "country": ""
+            },
+            "items": [],
         }
 
     def send(self, send_email=True):
@@ -44,7 +52,7 @@ class Invoice(HolviObject):
         If send_email is False then the invoice is *not* automatically emailed to the recipient
         and your must take care of sending the invoice yourself.
         """
-        url = str(self.api.base_url + '{code}/status/').format(code=self.code)
+        url = str(self.api.base_url + '{code}/status/').format(code=self.code) # six.u messes this up
         payload = {
             'mark_as_sent': True,
             'send_email': send_email,
@@ -55,48 +63,102 @@ class Invoice(HolviObject):
         # TODO: Check the stat and raise error if daft is not false or active is not true ?
 
     def to_holvi_dict(self):
+        """Convert our Python object to JSON acceptable to Holvi API"""
         self._jsondata["items"] = []
         for item in self.items:
             self._jsondata["items"].append(item.to_holvi_dict())
-        return self._jsondata
+        self._jsondata["issue_date"] = self.issue_date.isoformat()
+        self._jsondata["due_date"] = self.due_date.isoformat()
+        self._jsondata["receiver"] = self.receiver.to_holvi_dict()
+        return { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+
+    def save(self):
+        """Saves this invoice to Holvi, returns the created/updated invoice"""
+        if not self.items:
+            raise HolviError("No items")
+        if not self.subject:
+            raise HolviError("No subject")
+        send_json = self.to_holvi_dict()
+        if self.code:
+            url = six.u(self.api.base_url + '{code}/').format(code=self.code)
+            if not self.draft:
+                send_patch = { k:v for (k,v) in send_json.items() if k in self._patch_valid_keys }
+                send_patch["items"] = []
+                for item in self.items:
+                    send_patch["items"].append(item.to_holvi_dict(True))
+                stat = self.api.connection.make_patch(url, send_patch)
+            else:
+                stat = self.api.connection.make_put(url, send_json)
+            return Invoice(self.api, stat)
+        else:
+            url = six.u(self.api.base_url)
+            stat = self.api.connection.make_post(url, send_json)
+            return Invoice(self.api, stat)
+
+    def delete(self, undelete=False):
+        """Mark invoice as deleted/undeleted in Holvi
+
+        NOTE: It seems undeleting invoices is not actually possible even though API docs claim so,
+        I get "Credited or void invoices cannot be restored" as error when trying to undelete.
+        """
+        url = str(self.api.base_url + '{code}/status/').format(code=self.code) # six.u messes this up
+        payload = {
+            'active': undelete,
+        }
+        stat = self.api.connection.make_put(url, payload)
+        #print("Got stat=%s" % stat)
+        # TODO: Check the stat and raise error if active is not what we expected ?
 
 
-class InvoiceItem(object):
+class InvoiceItem(JSONObject): # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
+    """Pythonic wrapper for the items in an Invoice"""
+    api = None
+    invoice = None
     category = None
-    description = None
     net = None
     gross = None
     _cklass = IncomeCategory
+    _valid_keys = ("detailed_price", "category", "description") # Same for both create and update
+    _patch_valid_keys = ("description", "code")
 
-    def __init__(self, api, net=None, desc=None, holvi_dict=None, cklass=None):
+    def __init__(self, invoice, holvi_dict={}, cklass=None):
+        self.invoice = invoice
+        self.api = self.invoice.api
         if cklass:
             self._cklass = cklass
-        self.api = api
-        self.net = net
-        self.description = desc
-        if holvi_dict:
-            self.from_holvi_dict(holvi_dict)
+        super(InvoiceItem, self).__init__(**holvi_dict)
+        self._map_holvi_json_properties()
 
-    def from_holvi_dict(self, d):
-        self.net = decimal.Decimal(d["detailed_price"]["net"])
-        self.gross = decimal.Decimal(d["detailed_price"]["gross"])
-        self.description = d["description"]
-        self.category = self._cklass(self.api, {"code": d["category"]})
+    def _map_holvi_json_properties(self):
+        if not self._jsondata.get("detailed_price"):
+            self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" }
+        self.net = Decimal(self._jsondata["detailed_price"].get("net"))
+        self.gross = Decimal(self._jsondata["detailed_price"].get("gross"))
+        if self._jsondata.get("category"):
+            self.category = self._cklass(self.api.categories_api, {"code": self._jsondata["category"]})
+        # PONDER: there is a 'product' key in the Holvi JSON for items but it's always None
+        #         and the web UI does not allow setting products to invoices
 
-    def to_holvi_dict(self):
+    def to_holvi_dict(self, patch=False):
         if not self.gross:
             self.gross = self.net
-        r = {
-            "detailed_price": {
-              "net": six.u(self.net.quantize(Decimal('.01'))),
-              "gross": six.u(self.gross.quantize(Decimal('.01'))),
-            },
-            "description": self.description,
-            "category": "",
-        }
+        if not self._jsondata.get("detailed_price"):
+            self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" } #  "currency" and "vat_rate" are not sent to Holvi
+        self._jsondata["detailed_price"]["net"] = self.net.quantize(Decimal(".01")).__str__() # six.u messes this up
+        self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__() # six.u messes this up
         if self.category:
-            r["category"] = self.category.code
-        return r
+            self._jsondata["category"] = self.category.code
+        if patch:
+            filter_list = self._patch_valid_keys
+        else:
+            filter_list =  self._valid_keys
+        filtered = { k:v for (k,v) in self._jsondata.items() if k in filter_list }
+        if "detailed_price" in filtered:
+            if "vat_rate" in filtered["detailed_price"]:
+                del(filtered["detailed_price"]["vat_rate"])
+            if "currency" in filtered["detailed_price"]:
+                del(filtered["detailed_price"]["currency"])
+        return filtered
 
 
 @python_2_unicode_compatible
@@ -106,7 +168,8 @@ class InvoiceAPI(object):
 
     def __init__(self, connection):
         self.connection = connection
-        self.base_url = str(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
+        self.categories_api = CategoriesAPI(self.connection)
+        self.base_url = six.u(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
 
     def list_invoices(self):
         """Lists all invoices in the system"""
@@ -117,10 +180,6 @@ class InvoiceAPI(object):
         for ijson in invoices:
             ret.append(Invoice(self, ijson))
         return ret
-
-    def create_invoice(self, invoice):
-        """Takes an Invoice and creates it to Holvi"""
-        raise NotImplementedError()
 
     def get_invoice(self, invoice_code):
         """Retvieve given Invoice"""

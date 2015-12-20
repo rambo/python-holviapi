@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import six
 from future.utils import python_2_unicode_compatible, raise_from
 import itertools as it
@@ -34,6 +35,8 @@ class JSONObject(object):
 class HolviObject(JSONObject):
     """Holvi objects are JSONObject with reference to the relevant API instance"""
     api = None
+    _lazy = False
+    _fetch_method = None
 
     def __init__(self, api, jsondata=None):
         # We are not calling super() on purpose
@@ -41,7 +44,32 @@ class HolviObject(JSONObject):
         if not jsondata:
             self._init_empty()
         else:
+            if (    len(jsondata) == 1
+                and jsondata.get('code')):
+                    self._lazy = True
             self._jsondata = jsondata
+        self._map_holvi_json_properties()
+
+    def _map_holvi_json_properties(self):
+        """For mapping properties from _jsondata to something more Pythonic
+
+        For really simple objects there is no need to implement this"""
+        pass
+
+    def __getattr__(self, attr):
+        if object.__getattribute__(self, '_lazy'):
+            #print("We're lazy instance!")
+            f = object.__getattribute__(self, '_fetch_method')
+            if f is not None:
+                #print("Trying to fetch full one with %s" % f)
+                new = f(object.__getattribute__(self, '_jsondata')['code'])
+                self._jsondata = new._jsondata
+                self._map_holvi_json_properties()
+                self._lazy = False
+            else:
+                #print("No fetch method, giving up")
+                pass
+        return super(HolviObject, self).__getattr__(attr)
 
     def _init_empty(self):
         """Creates the base set of attributes object has/needs"""
