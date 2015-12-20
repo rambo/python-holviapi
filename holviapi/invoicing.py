@@ -52,7 +52,7 @@ class Invoice(HolviObject):
         If send_email is False then the invoice is *not* automatically emailed to the recipient
         and your must take care of sending the invoice yourself.
         """
-        url = six.u(self.api.base_url + '{code}/status/').format(code=self.code)
+        url = str(self.api.base_url + '{code}/status/').format(code=self.code) # six.u messes this up
         payload = {
             'mark_as_sent': True,
             'send_email': send_email,

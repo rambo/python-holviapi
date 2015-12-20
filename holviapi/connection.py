@@ -36,12 +36,12 @@ class Connection(object):
         try:
             r.raise_for_status()
         except Timeout as e:
-            raise ApiTimeout(six.u(e), response=e.response)
+            raise ApiTimeout(e.__str__(), response=e.response) # six.u messes this up
         except HTTPError as e:
             if e.response.status_code in (403, 401):
-                raise AuthenticationError(six.u(e), response=e.response)
+                raise AuthenticationError(e.__str__(), response=e.response) # six.u messes this up
             else:
-                raise ApiError(six.u(e), response=e.response)
+                raise ApiError(e.__str__(), response=e.response) # six.u messes this up
         return r.json()
 
     def make_post(self, url, payload):
@@ -66,10 +66,10 @@ class Connection(object):
         try:
             r.raise_for_status()
         except Timeout as e:
-            raise ApiTimeout(six.u(e), response=e.response)
+            raise ApiTimeout(e.__str__(), response=e.response) # six.u messes this up
         except HTTPError as e:
             if e.response.status_code in (403, 401):
-                raise AuthenticationError(six.u(e), response=e.response)
+                raise AuthenticationError(e.__str__(), response=e.response) # six.u messes this up
             else:
-                raise ApiError(six.u(e), response=e.response)
+                raise ApiError(e.__str__(), response=e.response) # six.u messes this up
         return r.json()
