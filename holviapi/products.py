@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+
 from future.utils import python_2_unicode_compatible, raise_from
-from .categories import IncomeCategory, CategoriesAPI
+
+from .categories import CategoriesAPI, IncomeCategory
 from .utils import HolviObject, JSONObject
 
 
@@ -37,6 +39,15 @@ class Product(HolviObject):
         filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
         return filtered
 
+    def get_question(self, code):
+        if self._lazy:
+            # Trigger full fetch
+            self.name
+        candidates = filter(lambda c: c.code == code, self.questions)
+        if not candidates:
+            return None
+        return next(candidates)
+
 
 class ShopProduct(Product):
     """Product from the open budget api, has slightly different angle to things"""
@@ -48,18 +59,17 @@ class OrderProduct(Product):
     pass
 
 
-class ProductQuestion(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
+class ProductQuestion(HolviObject):  # We extend HolviObject even though there is no direct way to manipulate these, for lazy-loading support
     product = None
     _pklass = OrderProduct
     _valid_keys = ("active", "product", "label", "code", "helptext")
 
     def __init__(self, product, holvi_dict={}, pklass=None):
         self.product = product
-        self.api = self.product.api
         if pklass:
             self._pklass = pklass
-        super(ProductQuestion, self).__init__(**holvi_dict)
-        self._map_holvi_json_properties()
+        self._fetch_method = self.product.get_question
+        super(ProductQuestion, self).__init__(self.product.api, holvi_dict)
 
     def _map_holvi_json_properties(self):
         if self._jsondata.get("product"):
@@ -95,10 +105,9 @@ class ProductsAPI(object):
         return ret
 
     def get_product(self, code):
-        """Gets category with given code
+        """Gets product with given code
 
-        NOTE: Filters the list of income and expense categories in this end due to
-        API limitations"""
+        NOTE: Filters the list of products in this end due to API limitations"""
         candidates = filter(lambda c: c.code == code, self.list_products())
         if not candidates:
             return None
