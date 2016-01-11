@@ -4,6 +4,7 @@ from __future__ import print_function
 import itertools
 
 from future.utils import python_2_unicode_compatible, raise_from
+from future.builtins.iterators import filter
 
 from .utils import HolviObject
 
