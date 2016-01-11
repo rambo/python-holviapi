@@ -5,6 +5,7 @@ import datetime
 from decimal import Decimal
 
 import dateutil.parser
+import six
 from future.utils import python_2_unicode_compatible, raise_from
 
 from .categories import CategoriesAPI, IncomeCategory
@@ -47,7 +48,7 @@ class Order(HolviObject):
     def _init_empty(self):
         """Creates the base set of attributes order has/needs"""
         self._jsondata = {
-            "pool": self.api.connection.pool,
+            "code": None,
             "purchases": [],
             "discount_code": "",
             "city": "",
@@ -73,6 +74,19 @@ class Order(HolviObject):
     def gross(self):
         return sum((x.gross for x in self.purchases))
 
+    def save(self):
+        """Saves this order to Holvi, returns a tuple with the order itself and checkout_uri"""
+        if self.code:
+            raise HolviError("Orders cannot be updated")
+        send_json = self.to_holvi_dict()
+        send_json.update({
+            'pool': self.api.connection.pool
+        })
+        url = six.u(self.api.base_url + "order/")
+        stat = self.api.connection.make_post(url, send_json)
+        code = stat["details_uri"].split("/")[-2]  # Maybe slightly ugly but I don't want to basically reimplement all but uri formation of the api method
+        return (stat["checkout_uri"], self.api.get_order(code))
+
 
 class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
     """Pythonic wrapper for the items/purchaces in an Order"""
@@ -82,7 +96,7 @@ class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject s
     net = None
     gross = None
     _pklass = OrderProduct
-    _valid_keys = ("product", "answers")
+    _valid_keys = ("product", "answers", "detailed_price")
     create_time = None
     update_time = None
     answers = []
@@ -98,10 +112,9 @@ class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject s
     def _map_holvi_json_properties(self):
         if self._jsondata.get("product"):
             self.product = self._pklass(self.api.products_api, {"code": self._jsondata["product"]})
-        if not self._jsondata.get("detailed_price"):
-            self._jsondata["detailed_price"] = {"net": "0.00", "gross": "0.00"}
-        self.net = Decimal(self._jsondata["detailed_price"].get("net"))
-        self.gross = Decimal(self._jsondata["detailed_price"].get("gross"))
+        if "detailed_price" in self._jsondata:
+            self.net = Decimal(self._jsondata["detailed_price"].get("net"))
+            self.gross = Decimal(self._jsondata["detailed_price"].get("gross"))
         for prop in ("create_time", "update_time"):
             if prop not in self._jsondata:
                 continue
@@ -109,19 +122,24 @@ class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject s
                 continue
             setattr(self, prop, dateutil.parser.parse(self._jsondata[prop]))
         self.answers = []
-        for adata in self._jsondata["answers"]:
+        for adata in self._jsondata.get("answers", []):
             self.answers.append(CheckoutItemAnswer(self, adata))
 
     def to_holvi_dict(self):
-        self._jsondata["answers"] = []
-        for answer in self.answers:
-            self._jsondata["answers"].append(answer.to_holvi_dict())
-        if not self.gross:
-            self.gross = self.net
-        if not self._jsondata.get("detailed_price"):
-            self._jsondata["detailed_price"] = {"net": "0.00", "gross": "0.00"}  # These are not actually sent to holvi in the order but we need to make sure they exist for the mapping below
-        self._jsondata["detailed_price"]["net"] = self.net.quantize(Decimal(".01")).__str__()  # six.u messes this up
-        self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__()  # six.u messes this up
+        if self.answers:
+            self._jsondata["answers"] = []
+            for answer in self.answers:
+                self._jsondata["answers"].append(answer.to_holvi_dict())
+        elif "answers" in self._jsondata:
+            del(self._jsondata["answers"])
+        # If detailed price is not set then product price will be used
+        if self.net is not None:
+            if not self.gross:
+                self.gross = self.net
+            if not self._jsondata.get("detailed_price"):
+                self._jsondata["detailed_price"] = {"net": "0.00", "gross": "0.00", "vat_rate": None}  # We need to make sure these exist for the mapping below
+            self._jsondata["detailed_price"]["net"] = self.net.quantize(Decimal(".01")).__str__()  # six.u messes this up
+            self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__()  # six.u messes this up
         if self.product:
             self._jsondata["product"] = self.product.code
         filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
