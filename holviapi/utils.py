@@ -12,6 +12,9 @@ class JSONObject(object):
     """Baseclass for objects which have JSON based backend data but also mixed local properties"""
     _jsondata = {}
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self._jsondata))
+
     def __init__(self, **kwargs):
         self._jsondata = kwargs
 
@@ -41,6 +44,9 @@ class HolviObject(JSONObject):
     _lazy = False
     _fetch_method = None
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self.to_holvi_dict()))
+
     def __init__(self, api, jsondata=None):
         # We are not calling super() on purpose
         self.api = api
@@ -58,6 +64,10 @@ class HolviObject(JSONObject):
 
         For really simple objects there is no need to implement this"""
         pass
+
+    def to_holvi_dict(self):
+        """For mapping the object back to JSON dict that holvi accepts"""
+        return self._jsondata
 
     def __getattr__(self, attr):
         if object.__getattribute__(self, '_lazy'):
