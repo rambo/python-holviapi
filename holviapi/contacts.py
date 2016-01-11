@@ -20,10 +20,8 @@ class OrderContact(JSONObject):  # aka buyer
     _valid_keys = ("postcode", "country", "lastname", "country_code", "street", "email", "company", "firstname", "city", "eu_vat_identifier")
 
     def __init__(self, jsondata=None):
-        if not jsondata:
-            self._init_empty()
-        else:
-            self._jsondata.update(jsondata)
+        self._init_empty()
+        self._jsondata.update(jsondata)
         # Not calling super on purpose
 
     def _init_empty(self):
