@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+
+import itertools as it
+
 import six
 from future.utils import python_2_unicode_compatible, raise_from
-import itertools as it
 
 
 @python_2_unicode_compatible
@@ -60,6 +62,8 @@ class HolviObject(JSONObject):
     def __getattr__(self, attr):
         if object.__getattribute__(self, '_lazy'):
             #print("We're lazy instance!")
+            if attr == 'code':  # Do not fetch full object if we're just getting the code
+                return object.__getattribute__(self, '_jsondata')['code']
             f = object.__getattribute__(self, '_fetch_method')
             if f is not None:
                 #print("Trying to fetch full one with %s" % f)
