@@ -11,7 +11,7 @@ class JSONObject(object):
     _jsondata = {}
 
     def __init__(self, **kwargs):
-        self._jsondata.update(kwargs)
+        self._jsondata = kwargs
 
     def __getattr__(self, attr):
         try:
