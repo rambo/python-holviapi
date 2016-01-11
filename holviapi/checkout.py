@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from future.utils import python_2_unicode_compatible, raise_from
+
 import datetime
 from decimal import Decimal
+
 import dateutil.parser
-from .utils import HolviObject, JSONObject
-from .products import ProductsAPI, OrderProduct
-from .categories import IncomeCategory, CategoriesAPI
+from future.utils import python_2_unicode_compatible, raise_from
+
+from .categories import CategoriesAPI, IncomeCategory
 from .contacts import OrderContact
+from .products import OrderProduct, ProductQuestion, ProductsAPI
+from .utils import HolviObject, JSONObject
 
 
 class Order(HolviObject):
@@ -72,7 +75,7 @@ class Order(HolviObject):
 
 
 class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
-    """Pythonic wrapper for the items/purchaes in an Order"""
+    """Pythonic wrapper for the items/purchaces in an Order"""
     api = None
     order = None
     product = None
@@ -82,6 +85,7 @@ class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject s
     _valid_keys = ("product", "answers")
     create_time = None
     update_time = None
+    answers = []
 
     def __init__(self, order, holvi_dict={}, pklass=None):
         self.order = order
@@ -104,10 +108,14 @@ class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject s
             if not self._jsondata[prop]:
                 continue
             setattr(self, prop, dateutil.parser.parse(self._jsondata[prop]))
-        # TODO: Map answers
+        self.answers = []
+        for adata in self._jsondata["answers"]:
+            self.answers.append(CheckoutItemAnswer(self, adata))
 
     def to_holvi_dict(self):
-        # TODO: Handle answers
+        self._jsondata["answers"] = []
+        for answer in self.answers:
+            self._jsondata["answers"].append(answer.to_holvi_dict())
         if not self.gross:
             self.gross = self.net
         if not self._jsondata.get("detailed_price"):
@@ -116,6 +124,37 @@ class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject s
         self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__()  # six.u messes this up
         if self.product:
             self._jsondata["product"] = self.product.code
+        filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
+        return filtered
+
+
+class CheckoutItemAnswer(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
+    """Pythonic wrapper for the answers to product questions"""
+    api = None
+    item = None
+    question = None
+    _valid_keys = ("question", "label", "answer")
+    _qklass = ProductQuestion
+
+    def __init__(self, item, holvi_dict={}, qklass=None):
+        self.item = item
+        self.api = self.item.api
+        if qklass:
+            self._qklass = qklass
+        super(CheckoutItemAnswer, self).__init__(**holvi_dict)
+        self._map_holvi_json_properties()
+
+    def _map_holvi_json_properties(self):
+        if self._jsondata.get("question"):
+            self.question = self._qklass(self.item.product, {"code": self._jsondata["question"]})
+
+    def to_holvi_dict(self):
+        if "label" not in self._jsondata:
+            self._jsondata["label"] = ""
+        if self.question:
+            self._jsondata["question"] = self.question.code
+            if not self._jsondata["label"]:
+                self._jsondata["label"] = self.question.label
         filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
         return filtered
 
