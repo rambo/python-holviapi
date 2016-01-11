@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from future.utils import python_2_unicode_compatible, raise_from
+
 import itertools
+
+from future.utils import python_2_unicode_compatible, raise_from
+
 from .utils import HolviObject
 
 
 class Category(HolviObject):
     """Baseclass for income/expense categories, do not instantiate directly"""
+
     def __init__(self, api, jsondata=None, **kwargs):
         self._fetch_method = api.get_category
         super(Category, self).__init__(api, jsondata, **kwargs)
@@ -15,6 +19,7 @@ class Category(HolviObject):
 class IncomeCategory(Category):
     """This represents an income category in the Holvi system"""
     pass
+
 
 class ExpenseCategory(Category):
     """This represents an expense category in the Holvi system"""

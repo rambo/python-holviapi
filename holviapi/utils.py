@@ -4,6 +4,7 @@ import six
 from future.utils import python_2_unicode_compatible, raise_from
 import itertools as it
 
+
 @python_2_unicode_compatible
 class JSONObject(object):
     """Baseclass for objects which have JSON based backend data but also mixed local properties"""
@@ -44,9 +45,9 @@ class HolviObject(JSONObject):
         if not jsondata:
             self._init_empty()
         else:
-            if (    len(jsondata) == 1
-                and jsondata.get('code')):
-                    self._lazy = True
+            if (len(jsondata) == 1
+                    and jsondata.get('code')):
+                self._lazy = True
             self._jsondata = jsondata
         self._map_holvi_json_properties()
 
@@ -82,7 +83,7 @@ class HolviObject(JSONObject):
 
 def int2fin_reference(n):
     """Calculates a checksum for a Finnish national reference number"""
-    checksum = 10-(sum([int(c)*i for c,i in zip(str(n)[::-1], it.cycle((7,3,1)))]) % 10)
+    checksum = 10 - (sum([int(c) * i for c, i in zip(str(n)[::-1], it.cycle((7, 3, 1)))]) % 10)
     return "%s%s" % (n, checksum)
 
 

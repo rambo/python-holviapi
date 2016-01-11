@@ -21,7 +21,7 @@ class Order(HolviObject):
     paid_time = None
 
     def _map_holvi_json_properties(self):
-        self.buyer = OrderContact({ k:v for (k,v) in self._jsondata.items() if k in OrderContact._valid_keys })
+        self.buyer = OrderContact({k: v for (k, v) in self._jsondata.items() if k in OrderContact._valid_keys})
         self.purchases = []
         for pdata in self._jsondata["purchases"]:
             self.purchases.append(CheckoutItem(self, pdata))
@@ -38,7 +38,7 @@ class Order(HolviObject):
         self._jsondata["purchases"] = []
         for purchase in self.purchases:
             self._jsondata["purchases"].append(purchase.to_holvi_dict())
-        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+        filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
         return filtered
 
     def _init_empty(self):
@@ -64,14 +64,14 @@ class Order(HolviObject):
 
     @property
     def net(self):
-        return sum(( x.net for x in self.purchases ))
+        return sum((x.net for x in self.purchases))
 
     @property
     def gross(self):
-        return sum(( x.gross for x in self.purchases ))
+        return sum((x.gross for x in self.purchases))
 
 
-class CheckoutItem(JSONObject): # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
+class CheckoutItem(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
     """Pythonic wrapper for the items/purchaes in an Order"""
     api = None
     order = None
@@ -95,7 +95,7 @@ class CheckoutItem(JSONObject): # We extend JSONObject instead of HolviObject si
         if self._jsondata.get("product"):
             self.product = self._pklass(self.api.products_api, {"code": self._jsondata["product"]})
         if not self._jsondata.get("detailed_price"):
-            self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" }
+            self._jsondata["detailed_price"] = {"net": "0.00", "gross": "0.00"}
         self.net = Decimal(self._jsondata["detailed_price"].get("net"))
         self.gross = Decimal(self._jsondata["detailed_price"].get("gross"))
         for prop in ("create_time", "update_time"):
@@ -111,12 +111,12 @@ class CheckoutItem(JSONObject): # We extend JSONObject instead of HolviObject si
         if not self.gross:
             self.gross = self.net
         if not self._jsondata.get("detailed_price"):
-            self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" } # These are not actually sent to holvi in the order but we need to make sure they exist for the mapping below
-        self._jsondata["detailed_price"]["net"] = self.net.quantize(Decimal(".01")).__str__() # six.u messes this up
-        self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__() # six.u messes this up
+            self._jsondata["detailed_price"] = {"net": "0.00", "gross": "0.00"}  # These are not actually sent to holvi in the order but we need to make sure they exist for the mapping below
+        self._jsondata["detailed_price"]["net"] = self.net.quantize(Decimal(".01")).__str__()  # six.u messes this up
+        self._jsondata["detailed_price"]["gross"] = self.gross.quantize(Decimal(".01")).__str__()  # six.u messes this up
         if self.product:
             self._jsondata["product"] = self.product.code
-        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+        filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
         return filtered
 
 

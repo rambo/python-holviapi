@@ -12,7 +12,7 @@ class Product(HolviObject):
     category = None
     questions = []
     _cklass = IncomeCategory
-    _valid_keys = ["code", "name", "description", "questions"] # Not really, there is no API for managing products ATM
+    _valid_keys = ["code", "name", "description", "questions"]  # Not really, there is no API for managing products ATM
 
     def __init__(self, api, jsondata=None, cklass=None, **kwargs):
         if cklass:
@@ -34,7 +34,7 @@ class Product(HolviObject):
         self._jsondata["questions"] = []
         for question in self.questions:
             self._jsondata["questions"].append(question.to_holvi_dict())
-        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+        filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
         return filtered
 
 
@@ -48,7 +48,7 @@ class OrderProduct(Product):
     pass
 
 
-class ProductQuestion(JSONObject): # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
+class ProductQuestion(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
     product = None
     _pklass = OrderProduct
     _valid_keys = ("Active", "product", "label", "code", "helptext")
@@ -68,7 +68,7 @@ class ProductQuestion(JSONObject): # We extend JSONObject instead of HolviObject
     def to_holvi_dict(self):
         if self.product:
             self._jsondata["product"] = self.product.code
-        filtered = { k:v for (k,v) in self._jsondata.items() if k in self._valid_keys }
+        filtered = {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
         return filtered
 
 
