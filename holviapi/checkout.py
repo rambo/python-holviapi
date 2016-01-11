@@ -3,6 +3,7 @@ from __future__ import print_function
 from future.utils import python_2_unicode_compatible, raise_from
 import datetime
 from decimal import Decimal
+import dateutil.parser
 from .utils import HolviObject, JSONObject
 from .products import ProductsAPI, OrderProduct
 from .categories import IncomeCategory, CategoriesAPI
@@ -14,13 +15,22 @@ class Order(HolviObject):
     buyer = None
     purchases = []
     _valid_keys = ("city", "lastname", "discount_code", "failure_url", "eu_vat_identifier", "postcode", "firstname", "notification_url", "country", "street", "pool", "cancel_url", "company", "success_url", "purchases", "email")
+    create_time = None
+    update_time = None
+    processed_time = None
+    paid_time = None
 
     def _map_holvi_json_properties(self):
         self.buyer = OrderContact({ k:v for (k,v) in self._jsondata.items() if k in OrderContact._valid_keys })
         self.purchases = []
         for pdata in self._jsondata["purchases"]:
             self.purchases.append(CheckoutItem(self, pdata))
-        # TODO: Map the _time properties even though they are not editable
+        for prop in ("create_time", "update_time", "processed_time", "paid_time"):
+            if prop not in self._jsondata:
+                continue
+            if not self._jsondata[prop]:
+                continue
+            setattr(self, prop, dateutil.parser.parse(self._jsondata[prop]))
 
     def to_holvi_dict(self):
         if self.buyer:
@@ -70,6 +80,8 @@ class CheckoutItem(JSONObject): # We extend JSONObject instead of HolviObject si
     gross = None
     _pklass = OrderProduct
     _valid_keys = ("product", "answers")
+    create_time = None
+    update_time = None
 
     def __init__(self, order, holvi_dict={}, pklass=None):
         self.order = order
@@ -86,8 +98,13 @@ class CheckoutItem(JSONObject): # We extend JSONObject instead of HolviObject si
             self._jsondata["detailed_price"] = { "net": "0.00", "gross": "0.00" }
         self.net = Decimal(self._jsondata["detailed_price"].get("net"))
         self.gross = Decimal(self._jsondata["detailed_price"].get("gross"))
+        for prop in ("create_time", "update_time"):
+            if prop not in self._jsondata:
+                continue
+            if not self._jsondata[prop]:
+                continue
+            setattr(self, prop, dateutil.parser.parse(self._jsondata[prop]))
         # TODO: Map answers
-        # TODO: Map the _time properties even though they are not editable
 
     def to_holvi_dict(self):
         # TODO: Handle answers
