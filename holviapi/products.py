@@ -51,7 +51,7 @@ class OrderProduct(Product):
 class ProductQuestion(JSONObject):  # We extend JSONObject instead of HolviObject since there is no direct way to manipulate these
     product = None
     _pklass = OrderProduct
-    _valid_keys = ("Active", "product", "label", "code", "helptext")
+    _valid_keys = ("active", "product", "label", "code", "helptext")
 
     def __init__(self, product, holvi_dict={}, pklass=None):
         self.product = product
