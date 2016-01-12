@@ -6,7 +6,7 @@ from future.builtins.iterators import filter
 from future.utils import python_2_unicode_compatible, raise_from
 
 from .categories import CategoriesAPI, IncomeCategory
-from .utils import HolviObject, JSONObject
+from .utils import HolviObject, HolviObjectList, JSONObject
 
 
 @python_2_unicode_compatible
@@ -84,6 +84,16 @@ class ProductQuestion(HolviObject):  # We extend HolviObject even though there i
         return filtered
 
 
+class ProductList(HolviObjectList):
+    _klass = ShopProduct
+
+    def _get_size(self):
+        self.size = len(self.jsondata["products"])
+
+    def _get_iter(self):
+        self._iter = iter(self.jsondata["products"])
+
+
 @python_2_unicode_compatible
 class ProductsAPI(object):
     """Handles the operations on products, instantiate with a Connection object"""
@@ -98,13 +108,9 @@ class ProductsAPI(object):
     def list_products(self):
         """Lists all products in the system"""
         url = self.base_url
-        # TODO add filtering support
+        # TODO add filtering support when holvi api supports it
         obdata = self.connection.make_get(url)
-        #print("Got obdata=%s" % obdata)
-        ret = []
-        for pjson in obdata['products']:
-            ret.append(ShopProduct(self, pjson))
-        return ret
+        return ProductList(obdata, self)
 
     def get_product(self, code):
         """Gets product with given code
