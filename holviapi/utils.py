@@ -1,16 +1,28 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import six
-from future.utils import python_2_unicode_compatible, raise_from
+
 import itertools as it
+
+import six
+from future.builtins import next, object
+from future.utils import python_2_unicode_compatible, raise_from
+
+try:
+    from collections.abc import Iterator
+except ImportError:
+    from collections import Iterator
+
 
 @python_2_unicode_compatible
 class JSONObject(object):
     """Baseclass for objects which have JSON based backend data but also mixed local properties"""
     _jsondata = {}
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self._jsondata))
+
     def __init__(self, **kwargs):
-        self._jsondata.update(kwargs)
+        self._jsondata = kwargs
 
     def __getattr__(self, attr):
         try:
@@ -38,15 +50,18 @@ class HolviObject(JSONObject):
     _lazy = False
     _fetch_method = None
 
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, repr(self.to_holvi_dict()))
+
     def __init__(self, api, jsondata=None):
         # We are not calling super() on purpose
         self.api = api
         if not jsondata:
             self._init_empty()
         else:
-            if (    len(jsondata) == 1
-                and jsondata.get('code')):
-                    self._lazy = True
+            if (len(jsondata) == 1
+                    and jsondata.get('code')):
+                self._lazy = True
             self._jsondata = jsondata
         self._map_holvi_json_properties()
 
@@ -56,9 +71,15 @@ class HolviObject(JSONObject):
         For really simple objects there is no need to implement this"""
         pass
 
+    def to_holvi_dict(self):
+        """For mapping the object back to JSON dict that holvi accepts"""
+        return self._jsondata
+
     def __getattr__(self, attr):
         if object.__getattribute__(self, '_lazy'):
             #print("We're lazy instance!")
+            if attr == 'code':  # Do not fetch full object if we're just getting the code
+                return object.__getattribute__(self, '_jsondata')['code']
             f = object.__getattribute__(self, '_fetch_method')
             if f is not None:
                 #print("Trying to fetch full one with %s" % f)
@@ -80,9 +101,45 @@ class HolviObject(JSONObject):
         raise NotImplementedError()
 
 
+class HolviObjectList(Iterator):
+    _klass = None
+
+    def __init__(self, jsondata, api):
+        self.api = api
+        self.jsondata = jsondata
+        self._get_iter()
+        self._get_size()
+
+    def _get_iter(self):
+        """Must set self._iter"""
+        raise NotImplementedError()
+
+    def _get_size(self):
+        """Must set self.size"""
+        raise NotImplementedError()
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        while True:
+            try:
+                return self._klass(self.api, next(self._iter))
+            except StopIteration:
+                next_url = self.jsondata.get("next", False)
+                if not next_url:
+                    raise
+                self.jsondata = self.api.connection.make_get(next_url)
+                self._get_iter()
+        raise StopIteration
+
+    def __len__(self):
+        return self.size
+
+
 def int2fin_reference(n):
     """Calculates a checksum for a Finnish national reference number"""
-    checksum = 10-(sum([int(c)*i for c,i in zip(str(n)[::-1], it.cycle((7,3,1)))]) % 10)
+    checksum = 10 - (sum([int(c) * i for c, i in zip(str(n)[::-1], it.cycle((7, 3, 1)))]) % 10)
     return "%s%s" % (n, checksum)
 
 

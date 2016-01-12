@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from future.utils import python_2_unicode_compatible, raise_from
+
 import itertools
-from .utils import HolviObject
+
+from future.builtins import next, object
+from future.builtins.iterators import filter
+from future.utils import python_2_unicode_compatible, raise_from
+
+from .utils import HolviObject, HolviObjectList, JSONObject
 
 
 class Category(HolviObject):
     """Baseclass for income/expense categories, do not instantiate directly"""
+
     def __init__(self, api, jsondata=None, **kwargs):
         self._fetch_method = api.get_category
         super(Category, self).__init__(api, jsondata, **kwargs)
@@ -16,9 +22,29 @@ class IncomeCategory(Category):
     """This represents an income category in the Holvi system"""
     pass
 
+
 class ExpenseCategory(Category):
     """This represents an expense category in the Holvi system"""
     pass
+
+
+class CategoryList(HolviObjectList):
+
+    def _get_size(self):
+        self.size = len(self.jsondata[self._key])
+
+    def _get_iter(self):
+        self._iter = iter(self.jsondata[self._key])
+
+
+class IncomeCategoryList(CategoryList):
+    _klass = IncomeCategory
+    _key = "income_categories"
+
+
+class ExpenseCategoryList(CategoryList):
+    _klass = ExpenseCategory
+    _key = "expense_categories"
 
 
 @python_2_unicode_compatible
@@ -35,21 +61,13 @@ class CategoriesAPI(object):
         """Lists all income categories in the system"""
         url = self.base_url
         obdata = self.connection.make_get(url)
-        #print("Got obdata=%s" % obdata)
-        ret = []
-        for icjson in obdata['income_categories']:
-            ret.append(IncomeCategory(self, icjson))
-        return ret
+        return IncomeCategoryList(obdata, self)
 
     def list_expense_categories(self):
         """Lists all expense categories in the system"""
         url = self.base_url
         obdata = self.connection.make_get(url)
-        #print("Got obdata=%s" % obdata)
-        ret = []
-        for ecjson in obdata['expense_categories']:
-            ret.append(ExpenseCategory(self, ecjson))
-        return ret
+        return ExpenseCategoryList(obdata, self)
 
     def get_category(self, code):
         """Gets category with given code

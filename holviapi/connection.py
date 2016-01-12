@@ -1,21 +1,26 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from future.utils import python_2_unicode_compatible, raise_from
-import six
+
 import json
+
 import requests
-from requests.exceptions import HTTPError, Timeout
 import requests_cache
-from .errors import AuthenticationError, ApiError, ApiTimeout
+import six
+from future.builtins import next, object
+from future.utils import python_2_unicode_compatible, raise_from
+from requests.exceptions import HTTPError, Timeout
+
+from .errors import ApiError, ApiTimeout, AuthenticationError
 
 # Cache GET results for 5min to save Holvis bandwidth (also the API is a bit on the slow side so this makes things faster for us)
 requests_cache.install_cache('Holvi-REST', 'memory', expire_after=300)
+
 
 @python_2_unicode_compatible
 class Connection(object):
     base_url_fmt = "https://holvi.com/api/"
     session = None
-    
+
     def __init__(self, poolname, authkey):
         self.pool = poolname
         self.key = authkey
@@ -36,12 +41,12 @@ class Connection(object):
         try:
             r.raise_for_status()
         except Timeout as e:
-            raise ApiTimeout(e.__str__(), response=e.response) # six.u messes this up
+            raise ApiTimeout(e.__str__(), response=e.response)  # six.u messes this up
         except HTTPError as e:
             if e.response.status_code in (403, 401):
-                raise AuthenticationError(e.__str__(), response=e.response) # six.u messes this up
+                raise AuthenticationError(e.__str__(), response=e.response)  # six.u messes this up
             else:
-                raise ApiError(e.__str__(), response=e.response) # six.u messes this up
+                raise ApiError(e.__str__(), response=e.response)  # six.u messes this up
         return r.json()
 
     def make_post(self, url, payload):
@@ -66,10 +71,10 @@ class Connection(object):
         try:
             r.raise_for_status()
         except Timeout as e:
-            raise ApiTimeout(e.__str__(), response=e.response) # six.u messes this up
+            raise ApiTimeout(e.__str__(), response=e.response)  # six.u messes this up
         except HTTPError as e:
             if e.response.status_code in (403, 401):
-                raise AuthenticationError(e.__str__(), response=e.response) # six.u messes this up
+                raise AuthenticationError(e.__str__(), response=e.response)  # six.u messes this up
             else:
-                raise ApiError(e.__str__(), response=e.response) # six.u messes this up
+                raise ApiError(e.__str__(), response=e.response)  # six.u messes this up
         return r.json()
