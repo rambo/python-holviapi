@@ -10,7 +10,7 @@ from future.utils import python_2_unicode_compatible, raise_from
 
 from .categories import CategoriesAPI, IncomeCategory
 from .contacts import InvoiceContact
-from .utils import HolviObject, JSONObject
+from .utils import HolviObject, HolviObjectList, JSONObject
 
 
 class Invoice(HolviObject):
@@ -166,6 +166,17 @@ class InvoiceItem(JSONObject):  # We extend JSONObject instead of HolviObject si
         return filtered
 
 
+class InvoiceList(HolviObjectList):
+    _klass = Invoice
+
+    def _get_size(self):
+        self.size = len(self.jsondata["list"])
+
+    def _get_iter(self):
+        self.jsondata = {"next": None, "list": self.jsondata}
+        self._iter = iter(self.jsondata["list"])
+
+
 @python_2_unicode_compatible
 class InvoiceAPI(object):
     """Handles the operations on invoices, instantiate with a Connection object"""
@@ -180,11 +191,7 @@ class InvoiceAPI(object):
         """Lists all invoices in the system"""
         # TODO add filtering support (if/when holvi adds it)
         invoices = self.connection.make_get(self.base_url)
-        #print("Got invoices=%s" % invoices)
-        ret = []
-        for ijson in invoices:
-            ret.append(Invoice(self, ijson))
-        return ret
+        return InvoiceList(invoices, self)
 
     def get_invoice(self, invoice_code):
         """Retvieve given Invoice"""
