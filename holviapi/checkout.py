@@ -6,12 +6,20 @@ from decimal import Decimal
 
 import dateutil.parser
 import six
+from future.builtins import next, object
 from future.utils import python_2_unicode_compatible, raise_from
 
 from .categories import CategoriesAPI, IncomeCategory
 from .contacts import OrderContact
 from .products import OrderProduct, ProductQuestion, ProductsAPI
 from .utils import HolviObject, JSONObject
+
+try:
+    from collections.abc import Iterator
+except ImportError:
+    from collections import Iterator
+
+
 
 
 class Order(HolviObject):
@@ -177,6 +185,33 @@ class CheckoutItemAnswer(JSONObject):  # We extend JSONObject instead of HolviOb
         return filtered
 
 
+class OrderList(Iterator):
+
+    def __init__(self, jsondata, api):
+        self.api = api
+        self.jsondata = jsondata
+        self.orders = iter(self.jsondata["results"])
+        self.size = jsondata["count"]
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        while True:
+            try:
+                return Order(self.api, next(self.orders))
+            except StopIteration:
+                next_url = self.jsondata.get("next", False)
+                if not next_url:
+                    raise
+                self.jsondata = self.api.connection.make_get(next_url)
+                self.orders = iter(self.jsondata["results"])
+        raise StopIteration
+
+    def __len__(self):
+        return self.size
+
+
 @python_2_unicode_compatible
 class CheckoutAPI(object):
     """Handles the operations on orders, instantiate with a Connection object"""
@@ -193,12 +228,7 @@ class CheckoutAPI(object):
         url = self.base_url + "pool/{pool}/order/".format(pool=self.connection.pool)
         # TODO add filtering support
         orders = self.connection.make_get(url)
-        #print("Got orders=%s" % orders)
-        # TODO: Make generator to handle the paging
-        ret = []
-        for ojson in orders["results"]:
-            ret.append(Order(self, ojson))
-        return ret
+        return OrderList(orders, self)
 
     def get_order(self, order_code):
         """Retvieve given Order"""
