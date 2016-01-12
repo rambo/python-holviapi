@@ -12,12 +12,7 @@ from future.utils import python_2_unicode_compatible, raise_from
 from .categories import CategoriesAPI, IncomeCategory
 from .contacts import OrderContact
 from .products import OrderProduct, ProductQuestion, ProductsAPI
-from .utils import HolviObject, JSONObject
-
-try:
-    from collections.abc import Iterator
-except ImportError:
-    from collections import Iterator
+from .utils import HolviObject, HolviObjectList, JSONObject
 
 
 class Order(HolviObject):
@@ -183,31 +178,14 @@ class CheckoutItemAnswer(JSONObject):  # We extend JSONObject instead of HolviOb
         return filtered
 
 
-class OrderList(Iterator):
+class OrderList(HolviObjectList):
+    _klass = Order
 
-    def __init__(self, jsondata, api):
-        self.api = api
-        self.jsondata = jsondata
-        self.orders = iter(self.jsondata["results"])
-        self.size = jsondata["count"]
+    def _get_size(self):
+        self.size = self.jsondata["count"]
 
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):
-        while True:
-            try:
-                return Order(self.api, next(self.orders))
-            except StopIteration:
-                next_url = self.jsondata.get("next", False)
-                if not next_url:
-                    raise
-                self.jsondata = self.api.connection.make_get(next_url)
-                self.orders = iter(self.jsondata["results"])
-        raise StopIteration
-
-    def __len__(self):
-        return self.size
+    def _get_iter(self):
+        self._iter = iter(self.jsondata["results"])
 
 
 @python_2_unicode_compatible

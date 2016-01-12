@@ -7,6 +7,11 @@ import six
 from future.builtins import next, object
 from future.utils import python_2_unicode_compatible, raise_from
 
+try:
+    from collections.abc import Iterator
+except ImportError:
+    from collections import Iterator
+
 
 @python_2_unicode_compatible
 class JSONObject(object):
@@ -94,6 +99,42 @@ class HolviObject(JSONObject):
     def save(self):
         """Creates or updates the object"""
         raise NotImplementedError()
+
+
+class HolviObjectList(Iterator):
+    _klass = None
+
+    def __init__(self, jsondata, api):
+        self.api = api
+        self.jsondata = jsondata
+        self._get_iter()
+        self._get_size()
+
+    def _get_iter(self):
+        """Must set self._iter"""
+        raise NotImplementedError()
+
+    def _get_size(self):
+        """Must set self.size"""
+        raise NotImplementedError()
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        while True:
+            try:
+                return self._klass(self.api, next(self._iter))
+            except StopIteration:
+                next_url = self.jsondata.get("next", False)
+                if not next_url:
+                    raise
+                self.jsondata = self.api.connection.make_get(next_url)
+                self._get_iter()
+        raise StopIteration
+
+    def __len__(self):
+        return self.size
 
 
 def int2fin_reference(n):
