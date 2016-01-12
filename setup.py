@@ -3,23 +3,10 @@ try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
-import subprocess
-
-import six
-
-git_version = 'UNKNOWN'
-try:
-    if six.PY2:
-        git_version = str(subprocess.check_output(['git', 'rev-parse', '--verify', '--short', 'HEAD'])).strip()
-    if six.PY3:
-        git_version = subprocess.check_output(['git', 'rev-parse', '--verify', '--short', 'HEAD']).strip().decode('ascii')
-except subprocess.CalledProcessError:
-    pass
 
 setup(
     name='holviapi',
-    version='0.1.1dev-%s' % git_version,
-    # version='0.1.1',
+    version='0.1.20160112',
     author='Eero "rambo" af Heurlin',
     author_email='rambo@iki.fi',
     packages=['holviapi', 'holviapi.errors', ],
