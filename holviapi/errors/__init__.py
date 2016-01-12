@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+from future.builtins import next, object
 from future.utils import python_2_unicode_compatible
 from requests.exceptions import HTTPError, Timeout
 

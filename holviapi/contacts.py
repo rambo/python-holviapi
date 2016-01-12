@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import six
+from future.builtins import next, object
 from future.utils import python_2_unicode_compatible, raise_from
 
 from .utils import JSONObject

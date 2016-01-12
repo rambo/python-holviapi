@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-from future.utils import python_2_unicode_compatible, raise_from
+from future.builtins import next, object
 from future.builtins.iterators import filter
+from future.utils import python_2_unicode_compatible, raise_from
 
 from .categories import CategoriesAPI, IncomeCategory
 from .utils import HolviObject, JSONObject

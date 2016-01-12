@@ -6,6 +6,7 @@ import json
 import requests
 import requests_cache
 import six
+from future.builtins import next, object
 from future.utils import python_2_unicode_compatible, raise_from
 from requests.exceptions import HTTPError, Timeout
 

@@ -20,8 +20,6 @@ except ImportError:
     from collections import Iterator
 
 
-
-
 class Order(HolviObject):
     """This represents a checkout in the Holvi system"""
     buyer = None

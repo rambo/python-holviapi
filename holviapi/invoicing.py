@@ -5,6 +5,7 @@ import datetime
 from decimal import Decimal
 
 import six
+from future.builtins import next, object
 from future.utils import python_2_unicode_compatible, raise_from
 
 from .categories import CategoriesAPI, IncomeCategory
