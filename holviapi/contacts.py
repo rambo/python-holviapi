@@ -12,6 +12,21 @@ class InvoiceContact(JSONObject):  # We extend JSONObject instead of HolviObject
     """Pythonic wrapper for invoice receivers"""
     _valid_keys = ("city", "name", "country", "street", "postcode", "email")  # Same for both create and update
 
+    def __init__(self, jsondata=None):
+        self._init_empty()
+        self._jsondata.update(jsondata)
+        # Not calling super on purpose
+
+    def _init_empty(self):
+        self._jsondata = {
+            "city": "",
+            "name": "",
+            "country": "",
+            "email": "",
+            "postcode": "",
+            "street": "",
+        }
+
     def to_holvi_dict(self):
         return {k: v for (k, v) in self._jsondata.items() if k in self._valid_keys}
 

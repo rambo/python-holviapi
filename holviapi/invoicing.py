@@ -28,7 +28,7 @@ class Invoice(HolviObject):
             self.items.append(InvoiceItem(self, holvi_dict=item))
         self.issue_date = datetime.datetime.strptime(self._jsondata["issue_date"], "%Y-%m-%d").date()
         self.due_date = datetime.datetime.strptime(self._jsondata["due_date"], "%Y-%m-%d").date()
-        self.receiver = InvoiceContact(**self._jsondata["receiver"])
+        self.receiver = InvoiceContact(self._jsondata["receiver"])
 
     def _init_empty(self):
         """Creates the base set of attributes invoice has/needs"""
