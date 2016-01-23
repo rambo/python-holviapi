@@ -187,10 +187,27 @@ class InvoiceAPI(object):
         self.categories_api = CategoriesAPI(self.connection)
         self.base_url = six.u(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
 
-    def list_invoices(self):
-        """Lists all invoices in the system"""
-        # TODO add filtering support (if/when holvi adds it)
-        invoices = self.connection.make_get(self.base_url)
+    def list_invoices(self, **kwargs):
+        """Lists all invoices in the system, returns InvoiceList you can iterate over.
+
+        Add Holvi supported GET filters via kwargs, on 2016.01.13 I was informed following keys are supported:
+
+          - reference (lookup_type='icontains')
+          - serial (Slightly complicated: try 'prefix-number-year', 'number-year', 'number', 'prefix')
+          - category (exact)
+          - receiver (field='receiver.name', lookup_type='icontains')
+          - subject (lookup_type='icontains')
+          - status (exact)
+          - create_time_from (field='create_time', lookup_type='gte')
+          - create_time_to (field='create_time', lookup_type='lte')
+          - update_time_from (field='update_time', lookup_type='gte')
+          - update_time_to (field='update_time', lookup_type='lte')
+
+        All times are ISO datetimes, try for example '2016-01-20T00:00:00.0Z'.
+
+        For other kinds of filtering use Pythons filter() function as usual.
+        """
+        invoices = self.connection.make_get(self.base_url, params=kwargs)
         return InvoiceList(invoices, self)
 
     def get_invoice(self, invoice_code):
