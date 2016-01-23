@@ -13,6 +13,11 @@ except ImportError:
     from collections import Iterator
 
 
+ISO_REFERENCE_VALID_ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXY'
+ISO_REFERENCE_VALID_NUMERIC = '0123456789'
+ISO_REFERENCE_VALID = ISO_REFERENCE_VALID_NUMERIC + ISO_REFERENCE_VALID_ALPHA
+
+
 @python_2_unicode_compatible
 class JSONObject(object):
     """Baseclass for objects which have JSON based backend data but also mixed local properties"""
@@ -156,11 +161,50 @@ def fin_reference_isvalid(n):
     return int2fin_reference(str(n)[:-1]) == str(n)
 
 
-def int2iso_reference(n):
-    """Calculates checksum (and adds the RF prefix) for an international reference number"""
-    n = int(n)
-    nt = n * 1000000 + 271500
-    checksum = 98 - (nt % 97)
-    return "RF%02d%d" % (checksum, n)
+def iso_reference_valid_char(c, raise_error=True):
+    """Helper to make sure the given character is valid for a reference number"""
+    if c in ISO_REFERENCE_VALID:
+        return True
+    if raise_error:
+        raise ValueError("'%s' is not in '%s'" % (c, ISO_REFERENCE_VALID))
+    return False
 
-# TODO: Add function to check that the iso reference is valid
+
+def iso_reference_char2int(c):
+    """Maps the characters in ISO reference (ones starting with RF) to their corresponding integers"""
+    iso_reference_valid_char(c, True)
+    return (ord(c) - 55)  # A = 10, Z=35
+
+
+def iso_reference_str2int(n):
+    """Creates the huge number from ISO alphanumeric ISO reference"""
+    n = n.upper()
+    numbers = []
+    for c in n:
+        iso_reference_valid_char(c)
+        if c in ISO_REFERENCE_VALID_NUMERIC:
+            numbers.append(c)
+        else:
+            numbers.append(str(iso_reference_char2int(c)))
+    return int(''.join(numbers))
+
+
+def int2iso_reference(n):
+    """Calculates checksum (and adds the RF prefix) for an international reference number from an integer"""
+    import warnings
+    warnings.warn("Use str2iso_reference instead", DeprecationWarning)
+    return str2iso_reference(str(n))
+
+
+def str2iso_reference(n):
+    """Calculates checksum (and adds the RF prefix) for an international reference number from a string (can contain any characters valid for the reference)"""
+    cs_source = n + 'RF00'
+    cs = 98 - (iso_reference_str2int(cs_source) % 97)
+    return "RF%02d%s" % (cs, n)
+
+
+def iso_reference_isvalid(ref):
+    """Validates ISO reference number"""
+    ref = str(ref)
+    cs_source = ref[4:] + ref[:4]
+    return (iso_reference_str2int(cs_source) % 97) == 1
