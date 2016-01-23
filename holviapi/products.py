@@ -116,7 +116,7 @@ class ProductsAPI(object):
         """Gets product with given code
 
         NOTE: Filters the list of products in this end due to API limitations"""
-        candidates = filter(lambda c: c.code == code, self.list_products())
-        if not candidates:
+        candidates = list(filter(lambda c: c.code == code, self.list_products()))
+        if not len(candidates):
             return None
-        return next(candidates)
+        return candidates[0]

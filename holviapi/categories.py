@@ -74,7 +74,7 @@ class CategoriesAPI(object):
 
         NOTE: Filters the list of income and expense categories in this end due to
         API limitations"""
-        candidates = filter(lambda c: c.code == code, itertools.chain(self.list_income_categories(), self.list_expense_categories()))
-        if not candidates:
+        candidates = list(filter(lambda c: c.code == code, itertools.chain(self.list_income_categories(), self.list_expense_categories())))
+        if not len(candidates):
             return None
-        return next(candidates)
+        return candidates[0]
