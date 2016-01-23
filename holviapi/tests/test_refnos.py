@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 import random
-from holviapi.utils import int2fin_reference, fin_reference_isvalid
+from holviapi.utils import int2fin_reference, fin_reference_isvalid, iso_reference_isvalid, str2iso_reference, ISO_REFERENCE_VALID
 
 
 
@@ -56,3 +56,35 @@ def test_int2fin_reference_random_inputs():
         testint = random.randint(1, 2**24)
         reference = int2fin_reference(testint)
         assert fin_reference_isvalid(reference)
+
+
+def test_str2iso_reference_valid_results():
+    assert str2iso_reference('C2H5OH') == 'RF97C2H5OH'
+
+
+def test_str2iso_reference_invalid_results():
+    assert str2iso_reference('C2H5OH') != 'RF40C2H5OH'
+
+
+def test_iso_reference_isvalid_valid_results():
+    assert iso_reference_isvalid('RF97C2H5OH')
+
+
+def test_iso_reference_isvalid_invalid_results():
+    assert not iso_reference_isvalid('RF40C2H5OH')
+
+
+def test_str2iso_reference_random_integers():
+    for x in range(1000):
+        testint = random.randint(1, 2**24)
+        reference = str2iso_reference(str(testint))
+        assert iso_reference_isvalid(reference)
+
+
+def test_str2iso_reference_random_strings():
+    for x in range(1000):
+        teststr = ''
+        for y in range(5, 14):
+            teststr += random.choice(ISO_REFERENCE_VALID)
+        reference = str2iso_reference(teststr)
+        assert iso_reference_isvalid(reference)
