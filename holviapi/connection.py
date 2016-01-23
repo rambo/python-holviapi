@@ -14,12 +14,23 @@ from .errors import ApiError, ApiTimeout, AuthenticationError
 
 # Cache GET results for 5min to save Holvis bandwidth (also the API is a bit on the slow side so this makes things faster for us)
 requests_cache.install_cache('Holvi-REST', 'memory', expire_after=300)
+# Store multiple pool connections with singleton getter
+CONNECTION_MAP = {}
 
 
 @python_2_unicode_compatible
 class Connection(object):
     base_url_fmt = "https://holvi.com/api/"
     session = None
+
+    @classmethod
+    def singleton(self, poolname, authkey):
+        """Get a singleton of a connection"""
+        global CONNECTION_MAP
+        mapkey = "%s:%s" % (poolname, authkey)
+        if not mapkey in CONNECTION_MAP:
+            CONNECTION_MAP[mapkey] = Connection(poolname, authkey)
+        return CONNECTION_MAP[mapkey]
 
     def __init__(self, poolname, authkey):
         self.pool = poolname
@@ -33,6 +44,8 @@ class Connection(object):
                 'Content-Type': 'application/json',
                 'Authorization': 'Token %s' % self.key
             })
+        # 0.4.10 does not yet support this method, add it when new versio comes to pypi
+        # self.session.remove_expired_responses()
 
     def make_get(self, url, params={}):
         """Make a GET request"""
@@ -65,7 +78,7 @@ class Connection(object):
         """Internal helper to make POST/PUT/PATCH requests (or whatever the underlying library supports)"""
         self._init_session()
         # We can't trust the cache after we have made changes of our own
-        requests_cache.clear()
+        self.session.cache.clear()
         m = getattr(self.session, method)
         r = m(url, data=json.dumps(payload))
         try:
