@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+import pytest
+import random
+from holviapi.utils import int2fin_reference, fin_reference_isvalid
+
+
+
+def test_fin_reference_isvalid_valid_results():
+    """Test handpicked, known-good inputs"""
+    assert fin_reference_isvalid(13)
+    assert fin_reference_isvalid(107)
+    assert fin_reference_isvalid(105523)
+    assert fin_reference_isvalid(102319)
+    assert fin_reference_isvalid(108326)
+    assert fin_reference_isvalid(100816)
+    assert fin_reference_isvalid(108724)
+    assert fin_reference_isvalid(108711)
+
+
+
+def test_fin_reference_isvalid_invalid_results():
+    """Test handpicked, known-bad inputs"""
+    assert not fin_reference_isvalid(1071110)
+    assert not fin_reference_isvalid(1055110)
+    assert not fin_reference_isvalid(1026110)
+    assert not fin_reference_isvalid(1039110)
+    assert not fin_reference_isvalid(1084110)
+
+
+
+def test_int2fin_reference_valid_results():
+    """Test handpicked, known-good inputs and corresponding outputs"""
+    assert int2fin_reference(1)     == '13'
+    assert int2fin_reference(10)    == '107'
+    assert int2fin_reference(10552) == '105523'
+    assert int2fin_reference(10231) == '102319'
+    assert int2fin_reference(10832) == '108326'
+    assert int2fin_reference(10081) == '100816'
+    assert int2fin_reference(10872) == '108724'
+    assert int2fin_reference(10871) == '108711'
+
+
+
+def test_int2fin_reference_invalid_results():
+    """Test some invalid values from issue #6"""
+    assert int2fin_reference(10711) != '1071110'
+    assert int2fin_reference(10551) != '1055110'
+    assert int2fin_reference(10261) != '1026110'
+    assert int2fin_reference(10391) != '1039110'
+    assert int2fin_reference(10841) != '1084110'
+
+
+
+def test_int2fin_reference_random_inputs():
+    for x in range(1000):
+        testint = random.randint(1, 2**24)
+        reference = int2fin_reference(testint)
+        assert fin_reference_isvalid(reference)
