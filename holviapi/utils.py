@@ -31,7 +31,10 @@ class JSONObject(object):
             try:
                 return self._jsondata[attr]
             except KeyError as e:
-                raise_from(AttributeError(six.u(e)), e)
+                if six.PY2:
+                    raise_from(AttributeError(e.message), e)
+                else:
+                    raise_from(AttributeError(e), e)
 
     def __setattr__(self, attr, val):
         try:
@@ -41,7 +44,10 @@ class JSONObject(object):
             try:
                 self._jsondata[attr] = val
             except KeyError as e:
-                raise_from(AttributeError(six.u(e)), e)
+                if six.PY2:
+                    raise_from(AttributeError(e.message), e)
+                else:
+                    raise_from(AttributeError(e), e)
 
 
 class HolviObject(JSONObject):

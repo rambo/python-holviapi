@@ -199,11 +199,30 @@ class CheckoutAPI(object):
         self.products_api = ProductsAPI(self.connection)
         self.base_url = str(connection.base_url_fmt + self.base_url_fmt)
 
-    def list_orders(self):
-        """Lists all orders in the system"""
+    def list_orders(self, **kwargs):
+        """Lists all orders in the system, returns OrderList you can iterate over.
+
+        Add Holvi supported GET filters via kwargs, API documentation (last update time unknown) says following keys are supported:
+
+          - filter_paid_time_from (datetime): Returns orders that are paid on or after the given datetime.
+          - filter_paid_time_to (datetime): Returns orders that are paid on or before the given datetime.
+          - filter_update_time_from (datetime): Returns orders that are updated on or after the given datetime.
+          - filter_update_time_to (datetime): Returns orders that are updated on or before the given datetime.
+          - firstname (string): Returns orders where buyer's first name matches the given string (parial, case insensitive match)
+          - lastname (string): Returns orders where buyer's last name matches the given string (parial, case insensitive match)
+          - street (string): Returns orders where buyer's street address matches the given string (parial, case insensitive match)
+          - city (string): Returns orders where buyer's city matches the given string (parial, case insensitive match)
+          - postcode (string): Returns orders where buyer's postcode matches the given string (parial, case insensitive match)
+          - country (string): Returns orders where buyer's country matches the given string (parial, case insensitive match)
+          - email (string): Returns orders where buyer's email address matches the given string (parial, case insensitive match)
+          - company (string): Returns orders where buyer's company name matches the given string (parial, case insensitive match)
+
+        All times are ISO datetimes, try for example '2016-01-20T00:00:00.0Z'.
+
+        For other kinds of filtering use Pythons filter() function as usual.
+        """
         url = self.base_url + "pool/{pool}/order/".format(pool=self.connection.pool)
-        # TODO add filtering support
-        orders = self.connection.make_get(url)
+        orders = self.connection.make_get(url, params=kwargs)
         return OrderList(orders, self)
 
     def get_order(self, order_code):

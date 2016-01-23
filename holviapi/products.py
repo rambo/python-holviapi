@@ -106,7 +106,10 @@ class ProductsAPI(object):
         self.base_url = str(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
 
     def list_products(self):
-        """Lists all products in the system"""
+        """Lists all products in the system, returns ProductList you can iterate over.
+
+        Holvi API does not currently support server-side filtering so you will have to use Pythons filter() function as usual.
+        """
         url = self.base_url
         # TODO add filtering support when holvi api supports it
         obdata = self.connection.make_get(url)
@@ -116,7 +119,7 @@ class ProductsAPI(object):
         """Gets product with given code
 
         NOTE: Filters the list of products in this end due to API limitations"""
-        candidates = filter(lambda c: c.code == code, self.list_products())
-        if not candidates:
+        candidates = list(filter(lambda c: c.code == code, self.list_products()))
+        if not len(candidates):
             return None
-        return next(candidates)
+        return candidates[0]

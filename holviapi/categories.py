@@ -58,13 +58,19 @@ class CategoriesAPI(object):
         self.base_url = str(connection.base_url_fmt + self.base_url_fmt).format(pool=connection.pool)
 
     def list_income_categories(self):
-        """Lists all income categories in the system"""
+        """Lists all products in the system, returns IncomeCategoryList you can iterate over.
+
+        Holvi API does not currently support server-side filtering so you will have to use Pythons filter() function as usual.
+        """
         url = self.base_url
         obdata = self.connection.make_get(url)
         return IncomeCategoryList(obdata, self)
 
     def list_expense_categories(self):
-        """Lists all expense categories in the system"""
+        """Lists all products in the system, returns ExpenseCategoryList you can iterate over.
+
+        Holvi API does not currently support server-side filtering so you will have to use Pythons filter() function as usual.
+        """
         url = self.base_url
         obdata = self.connection.make_get(url)
         return ExpenseCategoryList(obdata, self)
@@ -72,9 +78,8 @@ class CategoriesAPI(object):
     def get_category(self, code):
         """Gets category with given code
 
-        NOTE: Filters the list of income and expense categories in this end due to
-        API limitations"""
-        candidates = filter(lambda c: c.code == code, itertools.chain(self.list_income_categories(), self.list_expense_categories()))
-        if not candidates:
+        NOTE: Filters the list of income and expense categories in this end due to API limitations"""
+        candidates = list(filter(lambda c: c.code == code, itertools.chain(self.list_income_categories(), self.list_expense_categories())))
+        if not len(candidates):
             return None
-        return next(candidates)
+        return candidates[0]
