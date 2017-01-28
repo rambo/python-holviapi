@@ -18,6 +18,12 @@ def invoiceapi():
     ia = holviapi.InvoiceAPI(cnc)
     return ia
 
+@pytest.fixture
+def categoriesapi():
+    cnc = connection()
+    ca = holviapi.CategoriesAPI(cnc)
+    return ca
+
 def test_list_invoices(invoiceapi):
     l = invoiceapi.list_invoices()
     i = next(l)
@@ -29,3 +35,20 @@ def test_get_invoice(invoiceapi):
     assert type(i) == holviapi.Invoice
     i2 = invoiceapi.get_invoice(i.code)
     assert i.code == i2.code
+
+def test_list_income_categories(categoriesapi):
+    l = categoriesapi.list_income_categories()
+    c = next(l)
+    assert type(c) == holviapi.IncomeCategory
+
+def test_list_expense_categories(categoriesapi):
+    l = categoriesapi.list_expense_categories()
+    c = next(l)
+    assert type(c) == holviapi.ExpenseCategory
+
+def test_get_category(categoriesapi):
+    l = categoriesapi.list_income_categories()
+    c = next(l)
+    assert type(c) == holviapi.IncomeCategory
+    c2 = categoriesapi.get_category(c.code)
+    assert c.code == c2.code
