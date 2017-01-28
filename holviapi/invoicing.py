@@ -85,7 +85,7 @@ class Invoice(HolviObject):
             raise HolviError("No subject")
         send_json = self.to_holvi_dict()
         if self.code:
-            url = six.u(self.api.base_url + '{code}/').format(code=self.code)
+            url = str(self.api.base_url + '{code}/').format(code=self.code)
             if not self.draft:
                 send_patch = {k: v for (k, v) in send_json.items() if k in self._patch_valid_keys}
                 send_patch["items"] = []
@@ -96,7 +96,7 @@ class Invoice(HolviObject):
                 stat = self.api.connection.make_put(url, send_json)
             return Invoice(self.api, stat)
         else:
-            url = six.u(self.api.base_url)
+            url = str(self.api.base_url)
             stat = self.api.connection.make_post(url, send_json)
             return Invoice(self.api, stat)
 
