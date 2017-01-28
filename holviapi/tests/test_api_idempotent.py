@@ -22,3 +22,10 @@ def test_list_invoices(invoiceapi):
     l = invoiceapi.list_invoices()
     i = next(l)
     assert type(i) == holviapi.Invoice
+
+def test_get_invoice(invoiceapi):
+    l = invoiceapi.list_invoices()
+    i = next(l)
+    assert type(i) == holviapi.Invoice
+    i2 = invoiceapi.get_invoice(i.code)
+    assert i.code == i2.code
