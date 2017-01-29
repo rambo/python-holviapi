@@ -9,7 +9,7 @@ def connection():
     key = os.environ.get('HOLVI_KEY', None)
     if not pool or not key:
         raise RuntimeError("HOLVI_POOL and HOLVI_KEY must be in ENV for these tests")
-    cnc = holviapi.Connection(pool,key)
+    cnc = holviapi.Connection.singleton(pool,key)
     return cnc
 
 @pytest.fixture
