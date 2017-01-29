@@ -24,6 +24,12 @@ def categoriesapi():
     ca = holviapi.CategoriesAPI(cnc)
     return ca
 
+@pytest.fixture
+def productsapi():
+    cnc = connection()
+    pa = holviapi.ProductsAPI(cnc)
+    return pa
+
 def test_list_invoices(invoiceapi):
     l = invoiceapi.list_invoices()
     i = next(l)
@@ -52,3 +58,15 @@ def test_get_category(categoriesapi):
     assert type(c) == holviapi.IncomeCategory
     c2 = categoriesapi.get_category(c.code)
     assert c.code == c2.code
+
+def test_list_products(productsapi):
+    l = productsapi.list_products()
+    p = next(l)
+    assert type(p) == holviapi.ShopProduct
+
+def test_get_product(productsapi):
+    l = productsapi.list_products()
+    p = next(l)
+    assert type(p) == holviapi.ShopProduct
+    p2 = productsapi.get_product(p.code)
+    assert p.code == p2.code
