@@ -214,6 +214,7 @@ def iso_reference_isvalid(ref):
 class BarcodeException(Exception):
     pass
 
+
 def barcode(iban, reference, amount, due=None):
     """Calculates virtual barcode for IBAN account number and ISO reference
 
@@ -224,8 +225,8 @@ def barcode(iban, reference, amount, due=None):
         due {datetime.date} -- due date
     """
 
-    iban = iban.replace(' ','')
-    reference = reference.replace(' ','')
+    iban = iban.replace(' ', '')
+    reference = reference.replace(' ', '')
 
     if reference.startswith('RF'):
         version = 5
@@ -233,9 +234,9 @@ def barcode(iban, reference, amount, due=None):
         version = 4
 
     if version == 5:
-        reference = reference[2:] # test RF and add 00 where needed
-        if len(reference)<23:
-            reference = reference[:2] + ("0" * (23-len(reference))) + reference[2:]
+        reference = reference[2:]  # test RF and add 00 where needed
+        if len(reference) < 23:
+            reference = reference[:2] + ("0" * (23 - len(reference))) + reference[2:]
     elif version == 4:
         reference = reference.zfill(20)
 

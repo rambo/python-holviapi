@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
 import datetime
+import os
 from decimal import Decimal
-import pytest
+
 import holviapi
-from .test_api_idempotent import invoicesapi, categoriesapi, productsapi
+import pytest
+
+from .test_api_idempotent import categoriesapi, invoicesapi, productsapi
 
 pytestmark = pytest.mark.skipif((not os.environ.get('HOLVI_POOL') or not os.environ.get('HOLVI_KEY') or not bool(os.environ.get('HOLVI_ALLOW_DANGEROUS'))), reason="HOLVI_POOL, HOLVI_KEY and HOLVI_ALLOW_DANGEROUS must be in ENV for these tests")
+
 
 def test_create_delete_invoice(invoicesapi):
     ni = holviapi.Invoice(invoicesapi)
