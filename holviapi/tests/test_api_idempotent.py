@@ -3,6 +3,8 @@ import os
 import pytest
 import holviapi
 
+pytestmark = pytest.mark.skipif((not os.environ.get('HOLVI_POOL') or not os.environ.get('HOLVI_KEY')), reason="HOLVI_POOL and HOLVI_KEY must be in ENV for these tests")
+
 @pytest.fixture
 def connection():
     pool = os.environ.get('HOLVI_POOL', None)
