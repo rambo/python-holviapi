@@ -13,7 +13,7 @@ def connection():
     return cnc
 
 @pytest.fixture
-def invoiceapi():
+def invoicesapi():
     cnc = connection()
     ia = holviapi.InvoiceAPI(cnc)
     return ia
@@ -30,16 +30,16 @@ def productsapi():
     pa = holviapi.ProductsAPI(cnc)
     return pa
 
-def test_list_invoices(invoiceapi):
-    l = invoiceapi.list_invoices()
+def test_list_invoices(invoicesapi):
+    l = invoicesapi.list_invoices()
     i = next(l)
     assert type(i) == holviapi.Invoice
 
-def test_get_invoice(invoiceapi):
-    l = invoiceapi.list_invoices()
+def test_get_invoice(invoicesapi):
+    l = invoicesapi.list_invoices()
     i = next(l)
     assert type(i) == holviapi.Invoice
-    i2 = invoiceapi.get_invoice(i.code)
+    i2 = invoicesapi.get_invoice(i.code)
     assert i.code == i2.code
 
 def test_list_income_categories(categoriesapi):
