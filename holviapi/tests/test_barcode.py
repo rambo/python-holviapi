@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+
 from holviapi.utils import BarcodeException, barcode
 
 
