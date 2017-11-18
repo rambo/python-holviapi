@@ -3,8 +3,9 @@ import datetime
 import os
 from decimal import Decimal
 
-import holviapi
 import pytest
+
+import holviapi
 
 from .test_api_idempotent import categoriesapi, invoicesapi, productsapi
 
