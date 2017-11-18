@@ -61,7 +61,6 @@ class Invoice(HolviObject):
         payload = {
             'mark_as_sent': True,
             'send_email': send_email,
-            'active': True,  # It must be active to be sent...
         }
         stat = self.api.connection.make_put(url, payload)
         #print("Got stat=%s" % stat)
@@ -86,7 +85,7 @@ class Invoice(HolviObject):
         send_json = self.to_holvi_dict()
         if self.code:
             url = str(self.api.base_url + '{code}/').format(code=self.code)
-            if not self.draft:
+            if not self.code:
                 send_patch = {k: v for (k, v) in send_json.items() if k in self._patch_valid_keys}
                 send_patch["items"] = []
                 for item in self.items:
@@ -100,15 +99,15 @@ class Invoice(HolviObject):
             stat = self.api.connection.make_post(url, send_json)
             return Invoice(self.api, stat)
 
-    def delete(self, undelete=False):
-        """Mark invoice as deleted/undeleted in Holvi
+    def void(self):
+        """Mark invoice as void in Holvi"""
+        return self.delete()
 
-        NOTE: It seems undeleting invoices is not actually possible even though API docs claim so,
-        I get "Credited or void invoices cannot be restored" as error when trying to undelete.
-        """
+    def delete(self):
+        """Mark invoice as void in Holvi"""
         url = str(self.api.base_url + '{code}/status/').format(code=self.code)  # six.u messes this up
         payload = {
-            'active': undelete,
+            'void': True,
         }
         stat = self.api.connection.make_put(url, payload)
         #print("Got stat=%s" % stat)
