@@ -210,7 +210,7 @@ class InvoiceAPI(object):
         return InvoiceList(invoices, self)
 
     def get_invoice(self, invoice_code):
-        """Retvieve given Invoice"""
+        """Retrieve given Invoice"""
         url = self.base_url + '{code}/'.format(code=invoice_code)
         ijson = self.connection.make_get(url)
         #print("Got ijson=%s" % ijson)
