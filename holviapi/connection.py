@@ -44,8 +44,7 @@ class Connection(object):
                 'Content-Type': 'application/json',
                 'Authorization': 'Token %s' % self.key
             })
-        # 0.4.10 does not yet support this method, add it when new versio comes to pypi
-        # self.session.remove_expired_responses()
+        self.session.remove_expired_responses()
 
     def make_get(self, url, params={}):
         """Make a GET request"""
