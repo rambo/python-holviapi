@@ -18,8 +18,8 @@ except subprocess.CalledProcessError:
 
 setup(
     name='holviapi',
-    version='0.5.1dev-%s' % git_version,
-    #version='0.4.20181219',
+    #version='0.5.2dev-%s' % git_version,
+    version='0.5.20190130',
     author='Eero "rambo" af Heurlin',
     author_email='rambo@iki.fi',
     packages=['holviapi', 'holviapi.errors', ],
