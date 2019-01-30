@@ -79,7 +79,7 @@ class Connection(object):
         # We can't trust the cache after we have made changes of our own
         self.session.cache.clear()
         m = getattr(self.session, method)
-        r = m(url, data=json.dumps(payload))
+        r = m(url, json=payload)
         try:
             r.raise_for_status()
         except Timeout as e:
