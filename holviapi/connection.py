@@ -44,8 +44,7 @@ class Connection(object):
                 'Content-Type': 'application/json',
                 'Authorization': 'Token %s' % self.key
             })
-        # 0.4.10 does not yet support this method, add it when new versio comes to pypi
-        # self.session.remove_expired_responses()
+        self.session.remove_expired_responses()
 
     def make_get(self, url, params={}):
         """Make a GET request"""
@@ -80,7 +79,7 @@ class Connection(object):
         # We can't trust the cache after we have made changes of our own
         self.session.cache.clear()
         m = getattr(self.session, method)
-        r = m(url, data=json.dumps(payload))
+        r = m(url, json=payload)
         try:
             r.raise_for_status()
         except Timeout as e:

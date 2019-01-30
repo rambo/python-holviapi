@@ -3,11 +3,10 @@ import datetime
 import os
 from decimal import Decimal
 
+import holviapi
 import pytest
 
-import holviapi
-
-from .test_api_idempotent import categoriesapi, invoicesapi, productsapi
+from .fixtures import categoriesapi, connection, invoicesapi, productsapi
 
 pytestmark = pytest.mark.skipif((not os.environ.get('HOLVI_POOL') or not os.environ.get('HOLVI_KEY') or not bool(os.environ.get('HOLVI_ALLOW_DANGEROUS'))), reason="HOLVI_POOL, HOLVI_KEY and HOLVI_ALLOW_DANGEROUS must be in ENV for these tests")
 
