@@ -1,42 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
 
+import holviapi
 import pytest
 
-import holviapi
+from .fixtures import categoriesapi, connection, invoicesapi, productsapi
 
 pytestmark = pytest.mark.skipif((not os.environ.get('HOLVI_POOL') or not os.environ.get('HOLVI_KEY')), reason="HOLVI_POOL and HOLVI_KEY must be in ENV for these tests")
-
-
-@pytest.fixture
-def connection():
-    pool = os.environ.get('HOLVI_POOL', None)
-    key = os.environ.get('HOLVI_KEY', None)
-    if not pool or not key:
-        raise RuntimeError("HOLVI_POOL and HOLVI_KEY must be in ENV for these tests")
-    cnc = holviapi.Connection.singleton(pool, key)
-    return cnc
-
-
-@pytest.fixture
-def invoicesapi():
-    cnc = connection()
-    ia = holviapi.InvoiceAPI(cnc)
-    return ia
-
-
-@pytest.fixture
-def categoriesapi():
-    cnc = connection()
-    ca = holviapi.CategoriesAPI(cnc)
-    return ca
-
-
-@pytest.fixture
-def productsapi():
-    cnc = connection()
-    pa = holviapi.ProductsAPI(cnc)
-    return pa
 
 
 def test_list_invoices(invoicesapi):

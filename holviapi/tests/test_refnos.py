@@ -2,7 +2,6 @@
 import random
 
 import pytest
-
 from holviapi.utils import (
     ISO_REFERENCE_VALID,
     fin_reference_isvalid,
