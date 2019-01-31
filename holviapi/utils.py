@@ -138,7 +138,9 @@ class HolviObjectList(Iterator):
             try:
                 return self._klass(self.api, next(self._iter))
             except StopIteration:
-                next_url = self.jsondata.get("next", False)
+                next_url = False
+                if isinstance(self.jsondata, dict):
+                    next_url = self.jsondata.get("next", False)
                 if not next_url:
                     raise
                 self.jsondata = self.api.connection.make_get(next_url)
