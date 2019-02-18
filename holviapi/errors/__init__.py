@@ -4,6 +4,14 @@ from future.builtins import next, object
 from future.utils import python_2_unicode_compatible
 from requests.exceptions import HTTPError, Timeout
 
+try:
+    from json import JSONDecodeError
+except ImportError:
+    try:
+        from simplejson import JSONDecodeError
+    except ImportError:
+        JSONDecodeError = ValueError
+
 
 @python_2_unicode_compatible
 class HolviError(RuntimeError):
@@ -19,7 +27,10 @@ class ApiError(HTTPError, HolviError):
     def __init__(self, *args, **kwargs):
         super(ApiError, self).__init__(*args, **kwargs)
         if self.response is not None:
-            self.error_details = self.response.json()
+            try:
+                self.error_details = self.response.json()
+            except JSONDecodeError:
+                pass
 
     def __str__(self, *args, **kwargs):
         return super(ApiError, self).__str__(*args, **kwargs) + " Details: %s" % self.error_details
